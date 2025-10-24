@@ -1,0 +1,71 @@
+import os
+import re
+from logging.config import fileConfig
+
+from sqlalchemy import create_engine, pool
+from sqlalchemy.engine import Connection
+from alembic import context
+
+from app.database.postgres_config import DeclarativeBase
+from app.models.User import User
+
+# Alembic Config object
+config = context.config
+
+# Setup logging
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# Import your models here
+# from app.models import Base
+# target_metadata = Base.metadata
+target_metadata = DeclarativeBase.metadata
+
+
+def get_url() -> str:
+    """Generate the DB URL from environment variables."""
+    user = os.getenv("POSTGRES_DB_USER")
+    password = os.getenv("POSTGRES_DB_PASSWORD")
+    host = os.getenv("POSTGRES_DB_HOST")
+    port = os.getenv("POSTGRES_DB_PORT")
+    dbname = os.getenv("POSTGRES_DB_NAME")
+
+    # Use synchronous psycopg2 driver for Alembic
+    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
+
+
+
+def run_migrations_offline() -> None:
+    """Run migrations in offline mode (generate SQL)."""
+    url = get_url()  # call the function!
+
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    connectable = create_engine(get_url(), poolclass=pool.NullPool)
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+# Determine offline/online mode
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+

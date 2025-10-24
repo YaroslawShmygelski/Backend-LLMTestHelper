@@ -8,14 +8,16 @@ class MongoDB:
         self.mongodb_client: AsyncIOMotorClient | None = None
         self.database = None
 
-    async def connect_mongodb(self):
+    async def startup_db(self):
         MONGO_URI = os.getenv("MONGO_URI")
         self.mongodb_client = AsyncIOMotorClient(MONGO_URI)
         self.database = self.mongodb_client[os.getenv("MONGO_DATABASE")]
 
 
-    async def close_mongodb(self):
+    async def shutdown_db(self):
         if self.mongodb_client:
             self.mongodb_client.close()
+
+
 
 mongodb_connection = MongoDB()
