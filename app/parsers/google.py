@@ -12,18 +12,18 @@ ANY_TEXT_FIELD = "ANY TEXT!!"
 
 
 def get_form_response_url(url: str):
-    ''' Convert form url to form response url '''
-    url = url.replace('/viewform', '/formResponse')
-    if not url.endswith('/formResponse'):
-        if not url.endswith('/'):
-            url += '/'
-        url += 'formResponse'
+    """Convert form url to form response url"""
+    url = url.replace("/viewform", "/formResponse")
+    if not url.endswith("/formResponse"):
+        if not url.endswith("/"):
+            url += "/"
+        url += "formResponse"
     return url
 
 
 def extract_script_variables(name: str, html: str):
-    """ Extract a variable from a script tag in a HTML page """
-    pattern = re.compile(r'var\s' + name + r'\s=\s(.*?);')
+    """Extract a variable from a script tag in a HTML page"""
+    pattern = re.compile(r"var\s" + name + r"\s=\s(.*?);")
     match = pattern.search(html)
     if not match:
         return None
@@ -32,7 +32,7 @@ def extract_script_variables(name: str, html: str):
 
 
 def get_fb_public_load_data(url: str):
-    """ Get form data from a google form url """
+    """Get form data from a google form url"""
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         print("Error! Can't get form data", response.status_code)
@@ -41,6 +41,7 @@ def get_fb_public_load_data(url: str):
 
 
 # ------ MAIN LOGIC ------ #
+
 
 def parse_form_entries(url: str, only_required=False):
     """
@@ -78,10 +79,18 @@ def parse_form_entries(url: str, only_required=False):
                 "container_name": entry_name,
                 "type": entry_type_id,
                 "required": sub_entry[2] == 1,
-                "name": ' - '.join(sub_entry[3]) if (len(sub_entry) > 3 and sub_entry[3]) else None,
-                "options": [(x[0] or ANY_TEXT_FIELD) for x in sub_entry[1]] if sub_entry[1] else None,
+                "name": (
+                    " - ".join(sub_entry[3])
+                    if (len(sub_entry) > 3 and sub_entry[3])
+                    else None
+                ),
+                "options": (
+                    [(x[0] or ANY_TEXT_FIELD) for x in sub_entry[1]]
+                    if sub_entry[1]
+                    else None
+                ),
             }
-            if only_required and not info['required']:
+            if only_required and not info["required"]:
                 continue
             result.append(info)
         return result
@@ -96,33 +105,37 @@ def parse_form_entries(url: str, only_required=False):
 
     # Collect email addresses
     if v[1][10][6] > 1:
-        parsed_entries.append({
-            "id": "emailAddress",
-            "container_name": "Email Address",
-            "type": "required",
-            "required": True,
-            "options": "email address",
-        })
+        parsed_entries.append(
+            {
+                "id": "emailAddress",
+                "container_name": "Email Address",
+                "type": "required",
+                "required": True,
+                "options": "email address",
+            }
+        )
     if page_count > 0:
-        parsed_entries.append({
-            "id": "pageHistory",
-            "container_name": "Page History",
-            "type": "required",
-            "required": False,
-            "options": "from 0 to (number of page - 1)",
-            "default_value": ','.join(map(str, range(page_count + 1)))
-        })
+        parsed_entries.append(
+            {
+                "id": "pageHistory",
+                "container_name": "Page History",
+                "type": "required",
+                "required": False,
+                "options": "from 0 to (number of page - 1)",
+                "default_value": ",".join(map(str, range(page_count + 1))),
+            }
+        )
 
     return parsed_entries
 
 
 def fill_form_entries(entries, fill_algorithm):
-    """ Fill form entries with fill_algorithm """
+    """Fill form entries with fill_algorithm"""
     for index, entry in enumerate(entries):
-        if entry.get('default_value'):
+        if entry.get("default_value"):
             continue
         # remove ANY_TEXT_FIELD from options to prevent choosing it
-        options = (entry['options'] or [])[::]
+        options = (entry["options"] or [])[::]
         if index == 1:
             options.pop(2)
         if index == 2:
@@ -138,20 +151,25 @@ def fill_form_entries(entries, fill_algorithm):
             options.pop(1)
         if ANY_TEXT_FIELD in options:
             options.remove(ANY_TEXT_FIELD)
-        entry['default_value'] = fill_algorithm(entry['type'], entry['id'], options,
-                                                required=entry['required'], entry_name=entry['container_name'])
+        entry["default_value"] = fill_algorithm(
+            entry["type"],
+            entry["id"],
+            options,
+            required=entry["required"],
+            entry_name=entry["container_name"],
+        )
     return entries
 
 
 # ------ OUTPUT ------ #
 def get_form_submit_request(
-        url: str,
-        output="console",
-        only_required=False,
-        with_comment=True,
-        fill_algorithm=None,
+    url: str,
+    output="console",
+    only_required=False,
+    with_comment=True,
+    fill_algorithm=None,
 ):
-    ''' Get form request body data '''
+    """Get form request body data"""
     entries = parse_form_entries(url, only_required=only_required)
     if fill_algorithm:
         entries = fill_form_entries(entries, fill_algorithm)
@@ -172,7 +190,7 @@ def get_form_submit_request(
 
 
 def generate_form_request_dict(entries, with_comment: bool = True):
-    """ Generate a dict of form request data from entries """
+    """Generate a dict of form request data from entries"""
     result = "{\n"
     entry_id = 0
     for entry in entries:
@@ -180,7 +198,7 @@ def generate_form_request_dict(entries, with_comment: bool = True):
             # gen name of entry
             result += f"    # {entry['container_name']}{(': ' + entry['name']) if entry.get('name') else ''}{' (required)' * entry['required']}\n"
             # gen all options (if any)
-            if entry['options']:
+            if entry["options"]:
                 result += f"    #   Options: {entry['options']}\n"
             else:
                 result += f"    #   Option: {get_form_type_value_rule(entry['type'])}\n"
@@ -200,17 +218,17 @@ def generate_form_request_dict(entries, with_comment: bool = True):
 
 
 def get_form_type_value_rule(type_id):
-    ''' ------ TYPE ID ------
-        0: Short answer
-        1: Paragraph
-        2: Multiple choice
-        3: Dropdown
-        4: Checkboxes
-        5: Linear scale
-        7: Grid choice
-        9: Date
-        10: Time
-    '''
+    """------ TYPE ID ------
+    0: Short answer
+    1: Paragraph
+    2: Multiple choice
+    3: Dropdown
+    4: Checkboxes
+    5: Linear scale
+    7: Grid choice
+    9: Date
+    10: Time
+    """
     if type_id == 9:
         return "YYYY-MM-DD"
     if type_id == 10:
@@ -221,8 +239,17 @@ def get_form_type_value_rule(type_id):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Google Form Autofill and Submit")
     parser.add_argument("url", help="Google Form URL")
-    parser.add_argument("-o", "--output", default="console", help="Output file path (default: console)")
-    parser.add_argument("-r", "--required", action="store_true", help="Only include required fields")
-    parser.add_argument("-c", "--no-comment", action="store_true", help="Don't include explain comment for each field")
+    parser.add_argument(
+        "-o", "--output", default="console", help="Output file path (default: console)"
+    )
+    parser.add_argument(
+        "-r", "--required", action="store_true", help="Only include required fields"
+    )
+    parser.add_argument(
+        "-c",
+        "--no-comment",
+        action="store_true",
+        help="Don't include explain comment for each field",
+    )
     args = parser.parse_args()
     get_form_submit_request(args.url, args.output, args.required, not args.no_comment)

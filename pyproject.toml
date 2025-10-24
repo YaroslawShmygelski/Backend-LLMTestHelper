@@ -5,9 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "beanie>=2.0.0",
+    "black>=25.9.0",
     "dotenv>=0.9.9",
     "fastapi>=0.119.1",
     "generativeai>=0.0.1",
     "langchain-google-genai>=3.0.0",
+    "motor>=3.7.1",
+    "pylint>=4.0.2",
     "uvicorn>=0.38.0",
 ]
