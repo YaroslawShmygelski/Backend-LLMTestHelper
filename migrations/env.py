@@ -7,6 +7,7 @@ from alembic import context
 from app.database.postgres_config import DeclarativeBase
 from app.models.ORM.User import User
 from dotenv import load_dotenv
+
 load_dotenv()
 # Alembic Config object
 config = context.config
@@ -14,6 +15,7 @@ config = context.config
 # Setup logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
 
 def get_url() -> str:
     """Generate the DB URL from environment variables."""
@@ -33,7 +35,6 @@ config.set_main_option("sqlalchemy.url", get_url())
 # from app.models import Base
 # target_metadata = Base.metadata
 target_metadata = DeclarativeBase.metadata
-
 
 
 def run_migrations_offline() -> None:

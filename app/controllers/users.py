@@ -8,13 +8,19 @@ from app.schemas.User import UserCreate, UserResult
 from app.services.user_auth import get_password_hash
 
 
-async def register_user(user_payload: UserCreate, request: Request, db_session: AsyncSession=None) -> UserResult:
-    res = await db_session.execute(select(User).where(User.email==user_payload.email))
+async def register_user(
+    user_payload: UserCreate, request: Request, db_session: AsyncSession = None
+) -> UserResult:
+    res = await db_session.execute(select(User).where(User.email == user_payload.email))
     if res.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    res = await db_session.execute(select(User).where(User.country_code == user_payload.country_code,
-                                                      User.phone_number == user_payload.phone_number))
+    res = await db_session.execute(
+        select(User).where(
+            User.country_code == user_payload.country_code,
+            User.phone_number == user_payload.phone_number,
+        )
+    )
     if res.scalars().first():
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
@@ -23,7 +29,7 @@ async def register_user(user_payload: UserCreate, request: Request, db_session: 
     client_host = request.client.host
     ip_address = real_ip if real_ip else forward_for if forward_for else client_host
 
-    hashed_password=get_password_hash(user_payload.password)
+    hashed_password = get_password_hash(user_payload.password)
 
     try:
         user = User(
@@ -37,21 +43,14 @@ async def register_user(user_payload: UserCreate, request: Request, db_session: 
             password_hash=hashed_password,
         )
         db_session.add(user)
-        await  db_session.commit()
+        await db_session.commit()
         await db_session.refresh(user)
         return UserResult.model_validate(user)
     except IntegrityError as e:
         raise HTTPException(
-            status_code=400,
-            detail=f"Database integrity error: {str(e.orig)}"
+            status_code=400, detail=f"Database integrity error: {str(e.orig)}"
         )
     except SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Database error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

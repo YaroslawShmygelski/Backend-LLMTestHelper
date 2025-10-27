@@ -16,10 +16,15 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone_number: Optional[int] = Field(None, description="Phone number without +country code")
-    country_code: Optional[int] = Field(None, description="Country dialing code, e.g. 1 for USA")
+    phone_number: Optional[int] = Field(
+        None, description="Phone number without +country code"
+    )
+    country_code: Optional[int] = Field(
+        None, description="Country dialing code, e.g. 1 for USA"
+    )
     is_premium: Optional[bool] = False
     ip_address: str
+
 
 class UserUpdate(BaseModel):
     first_name: Optional[str]
@@ -29,8 +34,7 @@ class UserUpdate(BaseModel):
     country_code: Optional[int]
     is_premium: Optional[bool]
 
+
 class UserResult(BaseModel):
     id: int
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}

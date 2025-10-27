@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import  DateTime
+from sqlalchemy import DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column, Mapped
 from app.database.postgres_config import DeclarativeBase
@@ -20,6 +20,9 @@ class User(DeclarativeBase):
     password_hash: Mapped[str] = mapped_column()
     ip_address: Mapped[str] = mapped_column(nullable=True)
     last_login: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(),
-                                                 nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
