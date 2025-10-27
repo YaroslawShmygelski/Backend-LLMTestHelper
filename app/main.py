@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 
 from app.api.v1.routes.document import document_router
-from app.api.v1.routes.users import users_router
+from app.api.v1.routes.users import user_router
 from app.database.postgres_config import postgres_db_engine
 
 load_dotenv()
@@ -25,7 +25,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 app.include_router(document_router) #/documents
-app.include_router(users_router) #/users
+app.include_router(user_router) #/users
 
 
 if __name__ == "__main__":
