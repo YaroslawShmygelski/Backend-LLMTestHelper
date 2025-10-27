@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class PostgresDBSettings(BaseSettings):
     ENV: str = "dev"
     POSTGRES_USER: str
@@ -21,5 +22,6 @@ class PostgresDBSettings(BaseSettings):
         if self.DATABASE_URL:
             return self.DATABASE_URL
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
 
 postgres_db_settings = PostgresDBSettings()

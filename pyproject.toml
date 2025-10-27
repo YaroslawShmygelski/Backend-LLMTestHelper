@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.17.0",
+    "argon2-cffi>=25.1.0",
     "asyncpg>=0.30.0",
     "beanie>=2.0.0",
     "black>=25.9.0",
@@ -17,6 +18,7 @@ dependencies = [
     "passlib>=1.7.4",
     "psycopg2>=2.9.11",
     "pydantic-settings>=2.11.0",
+    "pydantic[email]>=2.12.3",
     "pylint>=4.0.2",
     "python-jose>=3.5.0",
     "sqlalchemy>=2.0.44",

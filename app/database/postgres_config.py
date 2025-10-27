@@ -14,9 +14,9 @@ postgres_db_engine = create_async_engine(
 )
 
 async_postgres_session = async_sessionmaker(
-    bind=postgres_db_engine,
-    expire_on_commit=False
+    bind=postgres_db_engine, expire_on_commit=False
 )
+
 
 async def get_async_postgres_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_postgres_session() as session:

@@ -1,4 +1,5 @@
 """This module contains api endpoints for the document connected logics"""
+
 from fastapi import APIRouter
 
 document_router = APIRouter()
