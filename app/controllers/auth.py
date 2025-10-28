@@ -5,9 +5,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.ORM.RefreshToken import RefreshToken
-from app.models.ORM.User import User
-from app.schemas.TokenResponse import TokenResponse
+from app.models.orm.refresh_token import RefreshToken
+from app.models.orm.user import User
+from app.schemas.token_response import TokenResponse
 from app.services.jwt_tokens_handlers import (
     create_access_token,
     create_and_store_refresh_token,

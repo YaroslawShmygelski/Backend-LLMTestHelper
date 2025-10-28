@@ -1,15 +1,16 @@
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, DateTime, func
+from sqlalchemy import ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.postgres_config import DeclarativeBase
+from app.models.orm.mixin import MixinModel
 
 
-class RefreshToken(DeclarativeBase):
+# pylint: disable=too-few-public-methods
+class RefreshToken(DeclarativeBase, MixinModel):
     __tablename__ = "refresh_token"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
@@ -18,12 +19,3 @@ class RefreshToken(DeclarativeBase):
     ip_address: Mapped[str] = mapped_column(nullable=True)
     revoked: Mapped[bool] = mapped_column(nullable=True, default=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )

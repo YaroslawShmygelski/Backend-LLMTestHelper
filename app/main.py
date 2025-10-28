@@ -18,7 +18,8 @@ llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
+    """Lifecycle context manager for FastAPI application."""
     async with postgres_db_engine.begin() as conn:
         await conn.execute(text("SELECT 1"))
     yield

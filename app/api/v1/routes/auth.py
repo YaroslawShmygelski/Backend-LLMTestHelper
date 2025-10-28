@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.auth import login_for_access_token, refresh_access_token
 from app.database.postgres_config import get_async_postgres_session
-from app.schemas.TokenResponse import TokenResponse
+from app.schemas.token_response import TokenResponse
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 

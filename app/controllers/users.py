@@ -3,8 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.ORM.User import User
-from app.schemas.User import UserCreate, UserResult
+from app.models.orm.user import User
+from app.schemas.user import UserCreate, UserResult
 from app.services.user_auth import get_password_hash
 
 
@@ -49,8 +49,8 @@ async def register_user(
     except IntegrityError as e:
         raise HTTPException(
             status_code=400, detail=f"Database integrity error: {str(e.orig)}"
-        )
+        ) from e
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}") from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}") from e

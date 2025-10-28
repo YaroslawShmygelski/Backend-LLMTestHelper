@@ -9,8 +9,9 @@ load_dotenv()
 DeclarativeBase = declarative_base()
 
 postgres_db_engine = create_async_engine(
-    f"postgresql+asyncpg://{os.getenv('POSTGRES_DB_USER')}:{os.getenv('POSTGRES_DB_PASSWORD')}"
-    f"@{os.getenv('POSTGRES_DB_HOST')}:{os.getenv('POSTGRES_DB_PORT')}/{os.getenv('POSTGRES_DB_NAME')}"
+    f"postgresql+asyncpg://{os.getenv('POSTGRES_DB_USER')}:"
+    f"{os.getenv('POSTGRES_DB_PASSWORD')}@{os.getenv('POSTGRES_DB_HOST')}:"
+    f"{os.getenv('POSTGRES_DB_PORT')}/{os.getenv('POSTGRES_DB_NAME')}"
 )
 
 async_postgres_session = async_sessionmaker(

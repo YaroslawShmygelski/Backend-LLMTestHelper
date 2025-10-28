@@ -9,8 +9,7 @@ from fastapi import Request, Response
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.ORM.RefreshToken import RefreshToken
-from app.models.ORM.User import User
+from app.models.orm.refresh_token import RefreshToken
 
 load_dotenv()
 
@@ -94,6 +93,6 @@ def hash_refresh_token(refresh_token: str) -> str:
 async def revoke_old_tokens(db_session: AsyncSession, user_id: int) -> None:
     await db_session.execute(
         update(RefreshToken)
-        .where(RefreshToken.user_id == int(user_id), RefreshToken.revoked == False)
+        .where(RefreshToken.user_id == int(user_id), RefreshToken.revoked.is_(False))
         .values(revoked=True)
     )

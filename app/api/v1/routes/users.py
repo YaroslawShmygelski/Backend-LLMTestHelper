@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers import users as user_controllers
 from app.database.postgres_config import get_async_postgres_session
-from app.schemas.User import UserCreate, UserResult
+from app.schemas.user import UserCreate, UserResult
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
