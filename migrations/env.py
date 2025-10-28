@@ -6,6 +6,7 @@ from alembic import context
 
 from app.database.postgres_config import DeclarativeBase
 from app.models.ORM.User import User
+from app.models.ORM.RefreshToken import RefreshToken
 from dotenv import load_dotenv
 
 load_dotenv()

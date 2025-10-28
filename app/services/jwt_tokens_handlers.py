@@ -5,6 +5,12 @@ from typing import Any
 
 from jose import jwt
 from dotenv import load_dotenv
+from fastapi import Request, Response
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.ORM.RefreshToken import RefreshToken
+from app.models.ORM.User import User
 
 load_dotenv()
 
@@ -22,12 +28,56 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(data: dict) -> str:
+def create_refresh_token(data: dict) -> (str, datetime):
     """Creation refresh token"""
     to_encode = data.copy()
-    expire = datetime.now(UTC) + timedelta(days=int(REFRESH_TOKEN_EXPIRE_DAYS))
-    to_encode.update({"exp": expire, type: "refresh"})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    expires_at = datetime.now(UTC) + timedelta(days=int(REFRESH_TOKEN_EXPIRE_DAYS))
+
+    # JWT expects exp as UNIX timestamp
+    to_encode.update({"exp": int(expires_at.timestamp()), "type": "refresh"})
+
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return token, expires_at
+
+
+async def create_and_store_refresh_token(
+    db_session: AsyncSession, user_id: int, request: Request
+) -> str:
+
+    await revoke_old_tokens(db_session, user_id)
+
+    refresh_token, expires_at = create_refresh_token(data={"sub": str(user_id)})
+    token_hash = hash_refresh_token(refresh_token)
+
+    ip_address = request.headers.get("x-real-ip") or request.client.host
+
+    db_session.add(
+        RefreshToken(
+            user_id=int(user_id),
+            token_hash=token_hash,
+            user_agent=request.headers.get("User-Agent"),
+            ip_address=ip_address,
+            expires_at=expires_at,
+            revoked=False,
+        )
+    )
+    return refresh_token
+
+
+def set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+        max_age=int(timedelta(days=float(REFRESH_TOKEN_EXPIRE_DAYS)).total_seconds()),
+    )
+
+
+def clear_refresh_cookie(response: Response) -> None:
+    response.delete_cookie("refresh_token")
 
 
 def decode_token(token: str) -> dict[str, Any]:
@@ -39,3 +89,11 @@ def decode_token(token: str) -> dict[str, Any]:
 def hash_refresh_token(refresh_token: str) -> str:
     data = refresh_token.encode("utf-8")
     return sha256(data).hexdigest()
+
+
+async def revoke_old_tokens(db_session: AsyncSession, user_id: int) -> None:
+    await db_session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == int(user_id), RefreshToken.revoked == False)
+        .values(revoked=True)
+    )

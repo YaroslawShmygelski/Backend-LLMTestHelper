@@ -63,4 +63,3 @@ def downgrade() -> None:
     op.create_index(op.f("ix_user_id"), "user", ["id"], unique=False)
     op.drop_index(op.f("ix_users_id"), table_name="users")
     op.drop_table("users")
-
