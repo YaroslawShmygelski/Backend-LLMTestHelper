@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-document_router = APIRouter(prefix="/documents", tags=["Documents"])
+document_router = APIRouter(tags=["Documents"])
 
 
 @document_router.get("/document")

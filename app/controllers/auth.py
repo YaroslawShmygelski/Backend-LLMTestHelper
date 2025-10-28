@@ -15,7 +15,7 @@ from app.services.jwt_tokens_handlers import (
     hash_refresh_token,
     decode_token,
 )
-from app.services.user_auth import verify_password
+from app.services.users import verify_password
 
 
 async def login_for_access_token(

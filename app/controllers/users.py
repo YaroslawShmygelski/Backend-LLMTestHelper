@@ -1,11 +1,14 @@
-from fastapi import HTTPException, Request
+from typing import Annotated
+
+from fastapi import HTTPException, Request, Depends
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.user import User
-from app.schemas.user import UserCreate, UserResult
-from app.services.user_auth import get_password_hash
+from app.schemas.users import UserCreate, UserResult, UserBase
+from app.services.users import get_password_hash, get_user_from_token
 
 
 async def register_user(
@@ -54,3 +57,7 @@ async def register_user(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}") from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}") from e
+
+
+async def get_current_user_from_db(current_user: User = Depends(get_user_from_token)) -> UserBase:
+    return UserBase.model_validate(current_user)

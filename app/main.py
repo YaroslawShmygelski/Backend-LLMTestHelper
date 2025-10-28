@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from sqlalchemy import text
 
 
@@ -28,10 +28,14 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(document.document_router)  # /document
-app.include_router(users.user_router)  # /users
-app.include_router(auth.auth_router)  # /auth
+api_v1_router = APIRouter(prefix="/api/v1")
 
+
+api_v1_router.include_router(document.document_router, prefix="/documents")
+api_v1_router.include_router(users.user_router, prefix="/users")
+api_v1_router.include_router(auth.auth_router, prefix="/auth")
+
+app.include_router(api_v1_router)
 
 if __name__ == "__main__":
     import uvicorn

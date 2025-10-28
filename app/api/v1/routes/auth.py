@@ -1,4 +1,5 @@
 """This module contains api endpoints for the Authentication connected logics"""
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
@@ -8,15 +9,15 @@ from app.controllers.auth import login_for_access_token, refresh_access_token
 from app.database.postgres_config import get_async_postgres_session
 from app.schemas.token_response import TokenResponse
 
-auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
+auth_router = APIRouter(tags=["Authentication"])
 
 
 @auth_router.post("/login", response_model=TokenResponse)
 async def token(
     request: Request,
     response: Response,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db_session: AsyncSession = Depends(get_async_postgres_session),
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
 ):
     res = await login_for_access_token(
         form_data=form_data, request=request, response=response, db_session=db_session
@@ -28,7 +29,7 @@ async def token(
 async def refresh_token(
     request: Request,
     response: Response,
-    db_session: AsyncSession = Depends(get_async_postgres_session),
+    db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
 ):
     res = await refresh_access_token(
         request=request, response=response, db_session=db_session
