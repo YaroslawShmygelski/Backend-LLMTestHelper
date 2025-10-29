@@ -59,5 +59,7 @@ async def register_user(
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}") from e
 
 
-async def get_current_user_from_db(current_user: User = Depends(get_user_from_token)) -> UserBase:
+async def get_current_user_from_db(
+    current_user: User = Depends(get_user_from_token),
+) -> UserBase:
     return UserBase.model_validate(current_user)

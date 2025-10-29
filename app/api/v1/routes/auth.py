@@ -1,4 +1,5 @@
 """This module contains api endpoints for the Authentication connected logics"""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response

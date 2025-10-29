@@ -18,9 +18,8 @@ class UserBase(BaseModel):
     country_code: int
     phone_number: int
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
+
 
 class UserUpdate(BaseModel):
     first_name: Optional[str]

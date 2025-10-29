@@ -8,7 +8,7 @@ from fastapi import FastAPI, APIRouter
 from sqlalchemy import text
 
 
-from app.api.v1.routes import auth, document, users
+from app.api.v1.routes import auth, tests, users
 
 from app.database.postgres_config import postgres_db_engine
 
@@ -31,7 +31,7 @@ app = FastAPI(lifespan=lifespan)
 api_v1_router = APIRouter(prefix="/api/v1")
 
 
-api_v1_router.include_router(document.document_router, prefix="/documents")
+api_v1_router.include_router(tests.tests_router, prefix="/documents")
 api_v1_router.include_router(users.user_router, prefix="/users")
 api_v1_router.include_router(auth.auth_router, prefix="/auth")
 

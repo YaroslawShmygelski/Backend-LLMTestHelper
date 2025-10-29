@@ -1,4 +1,5 @@
 """This module contains api endpoints for the Users connected logics"""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -24,6 +25,9 @@ async def register_user(
     )
     return result
 
+
 @user_router.get("/me", response_model=UserBase)
-async def get_current_user(current_user: UserBase = Depends(user_controllers.get_current_user_from_db)):
+async def get_current_user(
+    current_user: UserBase = Depends(user_controllers.get_current_user_from_db),
+):
     return current_user

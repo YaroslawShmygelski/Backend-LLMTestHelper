@@ -45,9 +45,9 @@ def get_fb_public_load_data(url: str):
 
 def parse_form_entries(url: str, only_required=False):
     """
-    In window.FB_PUBLIC_LOAD_DATA_ (as v)
-    - v[1][1] is the form entries array
-    - for x in v[1][1]:
+    In window.FB_PUBLIC_LOAD_DATA_ (as form_page_data)
+    - form_page_data[1][1] is the form entries array
+    - for x in form_page_data[1][1]:
         x[0] is the entry id of the entry container
         x[1] is the entry name (*)
         x[3] is the entry type
@@ -57,15 +57,15 @@ def parse_form_entries(url: str, only_required=False):
                 x[4][1][i][0] is the i-th entry value option (*)
             x[4][2] field required (1 if required, 0 if not) (*)
             x[4][3] name of Grid Choice, Linear Scale (in array)
-    - v[1][10][6]: determine the email field if the form request email
+    - form_page_data[1][10][6]: determine the email field if the form request email
         1: Do not collect email
         2: required checkbox, get verified email
         3: required responder input
     """
     url = get_form_response_url(url)
 
-    v = get_fb_public_load_data(url)
-    if not v or not v[1] or not v[1][1]:
+    form_page_data = get_fb_public_load_data(url)
+    if not form_page_data or not form_page_data[1] or not form_page_data[1][1]:
         print("Error! Can't get form entries. Login may be required.")
         return None
 
@@ -97,14 +97,14 @@ def parse_form_entries(url: str, only_required=False):
 
     parsed_entries = []
     page_count = 0
-    for entry in v[1][1]:
+    for entry in form_page_data[1][1]:
         if entry[3] == FORM_SESSION_TYPE_ID:
             page_count += 1
             continue
         parsed_entries += parse_entry(entry)
 
     # Collect email addresses
-    if v[1][10][6] > 1:
+    if form_page_data[1][10][6] > 1:
         parsed_entries.append(
             {
                 "id": "emailAddress",
@@ -235,21 +235,18 @@ def get_form_type_value_rule(type_id):
         return "HH:MM (24h format)"
     return "any text"
 
+def main():
+    url = input("Enter the Google Form URL: ").strip()
+    output = input("Enter output file path (leave empty for console): ").strip()
+    only_required = input("Use only required fields? (y/n): ").strip().lower() == "y"
+    add_comments = input("Add comments for each field? (y/n): ").strip().lower() != "n"
+
+    if not output:
+        output = "console"
+
+    # Call your main function
+    get_form_submit_request(url, output, only_required, add_comments)
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Google Form Autofill and Submit")
-    parser.add_argument("url", help="Google Form URL")
-    parser.add_argument(
-        "-o", "--output", default="console", help="Output file path (default: console)"
-    )
-    parser.add_argument(
-        "-r", "--required", action="store_true", help="Only include required fields"
-    )
-    parser.add_argument(
-        "-c",
-        "--no-comment",
-        action="store_true",
-        help="Don't include explain comment for each field",
-    )
-    args = parser.parse_args()
-    get_form_submit_request(args.url, args.output, args.required, not args.no_comment)
+    main()

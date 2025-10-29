@@ -9,6 +9,7 @@ from app.models.orm.mixin import MixinModel
 class User(DeclarativeBase, MixinModel):
     __tablename__ = "users"
 
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
     first_name: Mapped[str] = mapped_column()
     last_name: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(unique=True)

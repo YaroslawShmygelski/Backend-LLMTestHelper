@@ -22,25 +22,26 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-async def get_user_from_token(db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
-                              token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="token"))]
-                              ) -> User:
+async def get_user_from_token(
+    db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
+    token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="token"))],
+) -> User:
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        print(token)
         payload: dict = decode_token(token)
         user_id: int = int(payload.get("sub"))
+        print(user_id)
         if user_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    result = await db_session.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await db_session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
