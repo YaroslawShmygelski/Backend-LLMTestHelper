@@ -35,7 +35,6 @@ async def get_user_from_token(
         print(token)
         payload: dict = decode_token(token)
         user_id: int = int(payload.get("sub"))
-        print(user_id)
         if user_id is None:
             raise credentials_exception
     except JWTError:

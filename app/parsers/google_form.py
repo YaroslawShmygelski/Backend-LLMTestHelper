@@ -235,6 +235,7 @@ def get_form_type_value_rule(type_id):
         return "HH:MM (24h format)"
     return "any text"
 
+
 def main():
     url = input("Enter the Google Form URL: ").strip()
     output = input("Enter output file path (leave empty for console): ").strip()
