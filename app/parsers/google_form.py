@@ -1,9 +1,9 @@
 import argparse
 import json
 import re
+from typing import Any
 
 import requests
-
 
 # constants
 ALL_DATA_FIELDS = "FB_PUBLIC_LOAD_DATA_"
@@ -11,8 +11,11 @@ FORM_SESSION_TYPE_ID = 8
 ANY_TEXT_FIELD = "ANY TEXT!!"
 
 
-def get_form_response_url(url: str):
-    """Convert form url to form response url"""
+# ---------------- FETCHING ---------------- #
+
+
+def get_form_response_url(url: str) -> str:
+    """Convert a normal Google Form URL to a formResponse URL."""
     url = url.replace("/viewform", "/formResponse")
     if not url.endswith("/formResponse"):
         if not url.endswith("/"):
@@ -21,60 +24,82 @@ def get_form_response_url(url: str):
     return url
 
 
-def extract_script_variables(name: str, html: str):
-    """Extract a variable from a script tag in a HTML page"""
-    pattern = re.compile(r"var\s" + name + r"\s=\s(.*?);")
+def extract_script_variables(name: str, html: str) -> Any | None:
+    """
+    Extracts the value of a JS variable from the page HTML.
+    Example: var FB_PUBLIC_LOAD_DATA_ = [...];
+    """
+    pattern = re.compile(rf"var\s+{re.escape(name)}\s*=\s*(.*?);", re.DOTALL)
     match = pattern.search(html)
     if not match:
         return None
-    value_str = match.group(1)
-    return json.loads(value_str)
-
-
-def get_fb_public_load_data(url: str):
-    """Get form data from a google form url"""
-    response = requests.get(url, timeout=10)
-    if response.status_code != 200:
-        print("Error! Can't get form data", response.status_code)
+    try:
+        return json.loads(match.group(1))
+    except json.JSONDecodeError:
         return None
-    return extract_script_variables(ALL_DATA_FIELDS, response.text)
 
 
-# ------ MAIN LOGIC ------ #
-
-
-def parse_form_entries(url: str, only_required=False):
+def fetch_form_data(url: str) -> list | None:
     """
-    In window.FB_PUBLIC_LOAD_DATA_ (as form_page_data)
-    - form_page_data[1][1] is the form entries array
-    - for x in form_page_data[1][1]:
-        x[0] is the entry id of the entry container
-        x[1] is the entry name (*)
-        x[3] is the entry type
-        x[4] is the array of entry (usually length of 1, but can be more if Grid Choice, Linear Scale)
-            x[4][0] is the entry id (we only need this to make request) (*)
-            x[4][1] is the array of entry value (if null then text)
-                x[4][1][i][0] is the i-th entry value option (*)
-            x[4][2] field required (1 if required, 0 if not) (*)
-            x[4][3] name of Grid Choice, Linear Scale (in array)
-    - form_page_data[1][10][6]: determine the email field if the form request email
-        1: Do not collect email
-        2: required checkbox, get verified email
-        3: required responder input
+    Fetch the raw form data from a Google Form URL.
+
+    Returns:
+        A Python list representing the internal Google Form data structure,
+        or None if request fails or structure not found.
     """
     url = get_form_response_url(url)
-
-    form_page_data = get_fb_public_load_data(url)
-    if not form_page_data or not form_page_data[1] or not form_page_data[1][1]:
-        print("Error! Can't get form entries. Login may be required.")
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.RequestException as e:
+        print(f"[ERROR] Failed to fetch form: {e}")
         return None
 
-    def parse_entry(entry):
+    if response.status_code != 200:
+        print(f"[ERROR] HTTP {response.status_code}: Cannot fetch form data.")
+        return None
+
+    data = extract_script_variables(ALL_DATA_FIELDS, response.text)
+    if not data:
+        print("[ERROR] Cannot extract FB_PUBLIC_LOAD_DATA_. Possibly login required.")
+        return None
+
+    return data
+
+
+# ---------------- PARSING ---------------- #
+
+
+def parse_entries(form_data: list, only_required: bool = False) -> list[dict]:
+    """
+    Parse form entries from FB_PUBLIC_LOAD_DATA_ structure.
+
+    Args:
+        form_data: Raw data structure extracted from the Google Form.
+        only_required: If True, only include required fields.
+
+    Returns:
+        A list of parsed field dictionaries.
+    """
+    if not form_data or not form_data[1] or not form_data[1][1]:
+        print("[ERROR] Invalid form data structure.")
+        return []
+
+    entries_data = form_data[1][1]
+    parsed_entries = []
+    page_count = 0
+
+    for entry in entries_data:
         entry_name = entry[1]
         entry_type_id = entry[3]
-        result = []
+
+        # Skip section headers
+        if entry_type_id == FORM_SESSION_TYPE_ID:
+            page_count += 1
+            continue
+
+        # Parse sub-entries
         for sub_entry in entry[4]:
-            info = {
+            field_info = {
                 "id": sub_entry[0],
                 "container_name": entry_name,
                 "type": entry_type_id,
@@ -90,30 +115,27 @@ def parse_form_entries(url: str, only_required=False):
                     else None
                 ),
             }
-            if only_required and not info["required"]:
+            if only_required and not field_info["required"]:
                 continue
-            result.append(info)
-        return result
+            parsed_entries.append(field_info)
 
-    parsed_entries = []
-    page_count = 0
-    for entry in form_page_data[1][1]:
-        if entry[3] == FORM_SESSION_TYPE_ID:
-            page_count += 1
-            continue
-        parsed_entries += parse_entry(entry)
+    # Handle email collection
+    try:
+        email_collection_type = form_data[1][10][6]
+        if email_collection_type > 1:
+            parsed_entries.append(
+                {
+                    "id": "emailAddress",
+                    "container_name": "Email Address",
+                    "type": "required",
+                    "required": True,
+                    "options": "email address",
+                }
+            )
+    except (IndexError, TypeError):
+        pass
 
-    # Collect email addresses
-    if form_page_data[1][10][6] > 1:
-        parsed_entries.append(
-            {
-                "id": "emailAddress",
-                "container_name": "Email Address",
-                "type": "required",
-                "required": True,
-                "options": "email address",
-            }
-        )
+    # Add page history (for multi-page forms)
     if page_count > 0:
         parsed_entries.append(
             {
@@ -136,19 +158,6 @@ def fill_form_entries(entries, fill_algorithm):
             continue
         # remove ANY_TEXT_FIELD from options to prevent choosing it
         options = (entry["options"] or [])[::]
-        if index == 1:
-            options.pop(2)
-        if index == 2:
-            options.pop(5)
-            options.pop(24)
-            options.pop(10)
-        if index == 14:
-            options.pop(0)
-            options.pop(0)
-        if index == 15:
-            options.pop(1)
-        if index == 16:
-            options.pop(1)
         if ANY_TEXT_FIELD in options:
             options.remove(ANY_TEXT_FIELD)
         entry["default_value"] = fill_algorithm(
@@ -162,6 +171,49 @@ def fill_form_entries(entries, fill_algorithm):
 
 
 # ------ OUTPUT ------ #
+def parse_form_entries(url: str, only_required: bool = False) -> list[dict]:
+    """
+    Controller-level function that returns already parsed Google Form fields.
+    Combines both fetching (HTML → JSON) and parsing (JSON → structured fields).
+
+    Args:
+        url (str): Google Form URL (either /viewform or /formResponse)
+        only_required (bool): If True, include only required fields in the result.
+
+    Returns:
+        List[Dict]: A list of parsed form entries with metadata.
+            Example structure:
+            [
+                {
+                    "id": "123456",
+                    "container_name": "Full Name",
+                    "type": 0,
+                    "required": True,
+                    "name": None,
+                    "options": None,
+                    "default_value": None,
+                },
+                ...
+            ]
+
+    Raises:
+        ValueError: If form data could not be fetched or parsed.
+    """
+
+    # Step 1: Fetch raw form data from the given URL
+    form_data = fetch_form_data(url)
+    if not form_data:
+        raise ValueError(
+            "Failed to fetch or parse Google Form data. Check URL or form access settings."
+        )
+
+    # Step 2: Parse entries (questions and fields) from the raw data
+    entries = parse_entries(form_data, only_required=only_required)
+
+    # Step 3: Return parsed entries to controller or API
+    return entries
+
+
 def get_form_submit_request(
     url: str,
     output="console",
@@ -170,7 +222,8 @@ def get_form_submit_request(
     fill_algorithm=None,
 ):
     """Get form request body data"""
-    entries = parse_form_entries(url, only_required=only_required)
+    entries = parse_form_entries(url=url, only_required=only_required)
+
     if fill_algorithm:
         entries = fill_form_entries(entries, fill_algorithm)
     if not entries:

@@ -13,7 +13,7 @@ from app.schemas.token_response import TokenResponse
 auth_router = APIRouter(tags=["Authentication"])
 
 
-@auth_router.post("/login", response_model=TokenResponse)
+@auth_router.post("/login", response_model=TokenResponse, status_code=200)
 async def token(
     request: Request,
     response: Response,
@@ -26,7 +26,7 @@ async def token(
     return res
 
 
-@auth_router.post("/refresh", response_model=TokenResponse)
+@auth_router.post("/refresh", response_model=TokenResponse, status_code=200)
 async def refresh_token(
     request: Request,
     response: Response,

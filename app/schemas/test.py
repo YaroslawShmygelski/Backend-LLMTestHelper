@@ -25,8 +25,14 @@ class TestContent(BaseModel):
 
 class TestUploadOutput(BaseModel):
     id: int
-    status_code: Literal[201, 400, 500]
-
 
 class GoogleDocsRequest(BaseModel):
     link: str
+
+
+class TestUpdate(BaseModel):
+    type: Optional[str] = None
+    user_id: Optional[int] = None
+    title: Optional[str] = None
+    content: Optional[TestContent] = None
+

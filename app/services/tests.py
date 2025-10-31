@@ -2,14 +2,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.test import Test
 from app.models.orm.user import User
-from app.schemas.test import TestContent, Question
+from app.schemas.test import TestContent, Question, QuestionType
 from app.services.utils import get_form_type_description
 
 
-def normalize_test_data(parsed_data: dict) -> TestContent:
+def normalize_test_data(parsed_data: list[dict]) -> TestContent:
     normalized_questions: list[Question] = []
     for question in parsed_data:
-        question_type_description_dict = get_form_type_description(question["type"])
+        question_type_description_dict: QuestionType = get_form_type_description(
+            question["type"]
+        )
         normalized_questions.append(
             Question(
                 id=question["id"],

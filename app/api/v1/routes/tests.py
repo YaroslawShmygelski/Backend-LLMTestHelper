@@ -3,22 +3,35 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.controllers.tests import upload_google_doc_test
+from app.controllers import tests as test_controllers
 from app.database.postgres_config import get_async_postgres_session
 from app.models.orm.user import User
-from app.schemas.test import TestUploadOutput, GoogleDocsRequest
+from app.schemas.test import TestUploadOutput, GoogleDocsRequest, TestUpdate
 
 from app.services.users import get_user_from_token
 
 tests_router = APIRouter(tags=["Tests"])
 
 
-@tests_router.post("/add-test/google-docs", response_model=TestUploadOutput)
+@tests_router.post("/google-docs", response_model=TestUploadOutput, status_code=201)
 async def add_test_google_docs(
     link: GoogleDocsRequest,
     current_user: User = Depends(get_user_from_token),
-    db_session: AsyncSession = Depends(get_async_postgres_session),
+    async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
 
-    result = await upload_google_doc_test(link, current_user, db_session)
+    result = await test_controllers.upload_google_doc_test(
+        link, current_user, async_db_session
+    )
+    return result
+
+
+@tests_router.put("/{test_id}", response_model=TestUploadOutput, status_code=200)
+async def update_test(
+    test_id: int,
+    update_data: TestUpdate,
+    current_user: User = Depends(get_user_from_token),
+    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+):
+    result = await test_controllers.update_test(test_id, update_data, current_user, async_db_session)
     return result

@@ -1,4 +1,7 @@
-def get_form_type_description(type_id: int) -> dict:
+from app.schemas.test import QuestionType
+
+
+def get_form_type_description(type_id: int) -> QuestionType:
     """
     Returns a dictionary containing the type_id and a human-readable description
     of a Google Form question type. If the type_id is unknown, it returns
@@ -17,4 +20,4 @@ def get_form_type_description(type_id: int) -> dict:
     }
 
     description = type_descriptions.get(type_id, "Type: Unknown")
-    return {"type_id": type_id, "description": description}
+    return QuestionType(type_id=type_id, description=description)

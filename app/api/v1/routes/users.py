@@ -6,14 +6,13 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers import users as user_controllers
-from app.controllers.users import get_current_user_from_db
 from app.database.postgres_config import get_async_postgres_session
 from app.schemas.users import UserCreate, UserResult, UserBase
 
 user_router = APIRouter(tags=["Users"])
 
 
-@user_router.post("/register", response_model=UserResult)
+@user_router.post("/register", response_model=UserResult, status_code=201)
 async def register_user(
     payload: UserCreate,
     request: Request,
@@ -26,7 +25,7 @@ async def register_user(
     return result
 
 
-@user_router.get("/me", response_model=UserBase)
+@user_router.get("/me", response_model=UserBase, status_code=200)
 async def get_current_user(
     current_user: UserBase = Depends(user_controllers.get_current_user_from_db),
 ):
