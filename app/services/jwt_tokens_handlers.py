@@ -98,6 +98,7 @@ async def revoke_user_tokens(db_session: AsyncSession, user_id: int) -> None:
         .values(revoked=True)
     )
 
+
 def get_cookies_refresh_token(request: Request) -> str:
     refresh_token = request.cookies.get("refresh_token")
     print(f"{refresh_token=}")
@@ -105,7 +106,10 @@ def get_cookies_refresh_token(request: Request) -> str:
         raise HTTPException(status_code=401, detail="Incorrect refresh token")
     return refresh_token
 
-async def get_db_refresh_token(db_session: AsyncSession, refresh_token: str) -> RefreshToken:
+
+async def get_db_refresh_token(
+    db_session: AsyncSession, refresh_token: str
+) -> RefreshToken:
 
     token_hash = hash_refresh_token(refresh_token)
     result = await db_session.execute(
@@ -118,4 +122,3 @@ async def get_db_refresh_token(db_session: AsyncSession, refresh_token: str) -> 
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     return db_token
-

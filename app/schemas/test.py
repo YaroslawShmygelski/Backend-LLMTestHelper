@@ -12,6 +12,7 @@ class Question(BaseModel):
     id: int
     question: str
     type: QuestionType
+    required: bool
     options: Optional[List[str]] = None
     answer_mode: Optional[Literal["llm", "random", "user"]] = None
     user_answer: Optional[str] = None
@@ -26,6 +27,7 @@ class TestContent(BaseModel):
 class TestUploadOutput(BaseModel):
     id: int
 
+
 class GoogleDocsRequest(BaseModel):
     link: str
 
@@ -36,3 +38,12 @@ class TestUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[TestContent] = None
 
+
+class TestSubmitPayload(BaseModel):
+    quantity: Optional[int] = 1
+    content: Optional[TestContent] = None
+
+
+class TestSubmittedOutput(BaseModel):
+    id: int
+    link: str

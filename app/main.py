@@ -30,7 +30,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Change OpenApi schema to Make Bearer Authorization
-app.openapi=lambda: custom_openapi(app)
+app.openapi = lambda: custom_openapi(app)
 
 api_v1_router = APIRouter(prefix="/api/v1")
 

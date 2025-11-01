@@ -1,12 +1,21 @@
-from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
 
-from app.models.orm.test import Test
 from app.models.orm.user import User
 from app.parsers.google_form import parse_form_entries
-from app.schemas.test import TestUploadOutput, GoogleDocsRequest, TestContent, TestUpdate
-from app.services.tests import normalize_test_data, store_test_in_db
+from app.schemas.test import (
+    TestUploadOutput,
+    GoogleDocsRequest,
+    TestContent,
+    TestUpdate,
+    TestSubmitPayload,
+)
+from app.services.tests import (
+    normalize_test_data,
+    store_test_in_db,
+    get_test_from_db,
+    fill_form_entries,
+    fill_random_value,
+)
 
 
 async def upload_google_doc_test(
@@ -26,15 +35,12 @@ async def upload_google_doc_test(
     return TestUploadOutput(id=test_db.id)
 
 
-async def update_test(test_id: int, update_data: TestUpdate, current_user: User, db_session: AsyncSession):
-    result = await db_session.execute(
-        Select(Test).where(Test.id == test_id, Test.user_id == current_user.id)
+async def update_test(
+    test_id: int, update_data: TestUpdate, current_user: User, db_session: AsyncSession
+) -> TestUploadOutput:
+    test_db = await get_test_from_db(
+        test_id=test_id, current_user=current_user, async_db_session=db_session
     )
-    test_db=result.scalar_one_or_none()
-
-    if not test_db:
-        raise HTTPException(status_code=404, detail="Test not found")
-
 
     for key, value in update_data.model_dump(exclude_none=True).items():
         setattr(test_db, key, value)
@@ -44,3 +50,18 @@ async def update_test(test_id: int, update_data: TestUpdate, current_user: User,
 
     return TestUploadOutput(id=test_db.id)
 
+
+async def submit_test(
+    test_id: int,
+    current_user: User,
+    db_session: AsyncSession,
+):
+    test_db = await get_test_from_db(
+        test_id=test_id, current_user=current_user, async_db_session=db_session
+    )
+    answered_test_content = fill_form_entries(
+        test_content=test_db.content, fill_algorithm=fill_random_value
+    )
+    test_db.content = answered_test_content
+    await db_session.commit()
+    await db_session.refresh(test_db)
