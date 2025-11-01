@@ -5,11 +5,12 @@ from typing import Any
 
 from jose import jwt
 from dotenv import load_dotenv
-from fastapi import Request, Response
-from sqlalchemy import update
+from fastapi import Request, Response, HTTPException
+from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.refresh_token import RefreshToken
+from app.schemas.token_response import TokenResponse
 
 load_dotenv()
 
@@ -43,7 +44,7 @@ async def create_and_store_refresh_token(
     db_session: AsyncSession, user_id: int, request: Request
 ) -> str:
 
-    await revoke_old_tokens(db_session, user_id)
+    await revoke_user_tokens(db_session, user_id)
 
     refresh_token, expires_at = create_refresh_token(data={"sub": str(user_id)})
     token_hash = hash_refresh_token(refresh_token)
@@ -90,9 +91,31 @@ def hash_refresh_token(refresh_token: str) -> str:
     return sha256(data).hexdigest()
 
 
-async def revoke_old_tokens(db_session: AsyncSession, user_id: int) -> None:
+async def revoke_user_tokens(db_session: AsyncSession, user_id: int) -> None:
     await db_session.execute(
         update(RefreshToken)
         .where(RefreshToken.user_id == int(user_id), RefreshToken.revoked.is_(False))
         .values(revoked=True)
     )
+
+def get_cookies_refresh_token(request: Request) -> str:
+    refresh_token = request.cookies.get("refresh_token")
+    print(f"{refresh_token=}")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Incorrect refresh token")
+    return refresh_token
+
+async def get_db_refresh_token(db_session: AsyncSession, refresh_token: str) -> RefreshToken:
+
+    token_hash = hash_refresh_token(refresh_token)
+    result = await db_session.execute(
+        select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+    )
+    db_token = result.scalar_one_or_none()
+    print(f"{db_token=}")
+
+    if not db_token or db_token.revoked or db_token.expires_at < datetime.now(UTC):
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    return db_token
+

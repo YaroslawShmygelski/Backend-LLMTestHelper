@@ -30,10 +30,10 @@ app = FastAPI(lifespan=lifespan)
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
-
+api_v1_router.include_router(auth.auth_router, prefix="/auth")
 api_v1_router.include_router(tests.tests_router, prefix="/tests")
 api_v1_router.include_router(users.user_router, prefix="/users")
-api_v1_router.include_router(auth.auth_router, prefix="/auth")
+
 
 app.include_router(api_v1_router)
 
