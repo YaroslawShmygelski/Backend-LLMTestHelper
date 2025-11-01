@@ -11,6 +11,7 @@ from sqlalchemy import text
 from app.api.v1.routes import auth, tests, users
 
 from app.database.postgres_config import postgres_db_engine
+from app.settings import custom_openapi
 
 load_dotenv()
 
@@ -27,6 +28,9 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Change OpenApi schema to Make Bearer Authorization
+app.openapi=lambda: custom_openapi(app)
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
