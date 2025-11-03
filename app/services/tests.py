@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.test import Test
 from app.models.orm.user import User
-from app.schemas.test import TestContent, Question, QuestionType
+from app.schemas.test import TestContent, Question, QuestionType, Answer
 from app.services.utils import get_form_type_description
 
 
@@ -89,16 +89,29 @@ def fill_random_value(type_id, entry_id, options, required=False, entry_name="")
     return ""
 
 
-def fill_form_entries(test_content: TestContent, fill_algorithm) -> TestContent:
+def fill_form_entries(test_content: TestContent, payload_answers: list[Answer]) -> TestContent:
     """Fill form entries with fill_algorithm"""
-    for question in test_content.questions:
-        options = question.options
-        question.answer_mode = "random"
-        question.random_answer = fill_algorithm(
-            question.type.type_id,
-            question.id,
-            options,
-            required=question.required,
-            entry_name=question.question,
-        )
+    questions_dict = {question.id: question for question in test_content.questions}
+
+    for answer in payload_answers:
+        if answer.question_id not in questions_dict:
+            raise HTTPException(status_code=400, detail="Invalid id of a question")
+
+        question = questions_dict[answer.question_id]
+
+        if answer.answer_mode=="random":
+            question.random_answer = fill_random_value(
+                question.type.type_id,
+                question.id,
+                question.options,
+                required=question.required,
+                entry_name=question.question,
+            )
+            question.answer_mode="random"
+        elif answer.answer_mode=="user":
+            question.user_answer=answer.answer
+            question.answer_mode="user"
+        elif answer.answer_mode=="llm":
+            ...
+
     return test_content

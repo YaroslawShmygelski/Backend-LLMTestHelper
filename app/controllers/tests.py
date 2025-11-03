@@ -14,7 +14,7 @@ from app.services.tests import (
     store_test_in_db,
     get_test_from_db,
     fill_form_entries,
-    fill_random_value,
+
 )
 
 
@@ -53,15 +53,18 @@ async def update_test(
 
 async def submit_test(
     test_id: int,
+    payload: TestSubmitPayload,
     current_user: User,
     db_session: AsyncSession,
 ):
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
     )
+
     answered_test_content = fill_form_entries(
-        test_content=test_db.content, fill_algorithm=fill_random_value
+        test_content=test_db.content, payload_answers=payload.answers
     )
-    test_db.content = answered_test_content
+    print(answered_test_content)
+    test_db.content = answered_test_content.model_dump()
     await db_session.commit()
     await db_session.refresh(test_db)

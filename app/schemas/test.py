@@ -15,9 +15,9 @@ class Question(BaseModel):
     required: bool
     options: Optional[List[str]] = None
     answer_mode: Optional[Literal["llm", "random", "user"]] = None
-    user_answer: Optional[str] = None
-    llm_answer: Optional[str] = None
-    random_answer: Optional[str] = None
+    user_answer: Optional[str] | Optional[list] = None
+    llm_answer: Optional[str] | Optional[list] = None
+    random_answer: Optional[str] | Optional[list] = None
 
 
 class TestContent(BaseModel):
@@ -38,10 +38,15 @@ class TestUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[TestContent] = None
 
+class Answer(BaseModel):
+    question_id: int
+    answer_mode: Optional[Literal["llm", "random", "user"]] = None
+    answer: Optional[str] = None
+
 
 class TestSubmitPayload(BaseModel):
     quantity: Optional[int] = 1
-    content: Optional[TestContent] = None
+    answers: list[Answer]
 
 
 class TestSubmittedOutput(BaseModel):

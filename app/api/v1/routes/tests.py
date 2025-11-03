@@ -21,11 +21,10 @@ tests_router = APIRouter(tags=["Tests"])
 
 @tests_router.post("/google-docs", response_model=TestUploadOutput, status_code=201)
 async def add_test_google_docs(
-    link: GoogleDocsRequest,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        link: GoogleDocsRequest,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
-
     result = await test_controllers.upload_google_doc_test(
         link, current_user, async_db_session
     )
@@ -34,10 +33,10 @@ async def add_test_google_docs(
 
 @tests_router.patch("/{test_id}", response_model=TestUploadOutput, status_code=200)
 async def update_test(
-    test_id: int,
-    update_data: TestUpdate,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        test_id: int,
+        update_data: TestUpdate,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.update_test(
         test_id, update_data, current_user, async_db_session
@@ -47,9 +46,11 @@ async def update_test(
 
 @tests_router.post("/submit/{test_id}", response_model=None, status_code=200)
 async def submit_test(
-    test_id: int,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        test_id: int,
+        payload: TestSubmitPayload,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
-    result = await test_controllers.submit_test(test_id, current_user, async_db_session)
+    result = await test_controllers.submit_test(test_id=test_id, payload=payload, current_user=current_user,
+                                                db_session=async_db_session)
     return result
