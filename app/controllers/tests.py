@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.orm.user import User
 from app.parsers.google_form import parse_form_entries, get_form_response_url
 from app.schemas.test import (
-    TestUploadOutput,
+    TestResponse,
     GoogleDocsRequest,
     TestContent,
     TestUpdate,
-    TestSubmitPayload,
+    TestSubmitPayload, TestGetResponse,
 )
 from app.services.tests import (
     normalize_test_data,
@@ -22,7 +22,7 @@ from app.services.tests import (
 
 async def upload_google_doc_test(
         payload: GoogleDocsRequest, current_user: User, async_db_session: AsyncSession
-) -> TestUploadOutput:
+) -> TestResponse:
     parsed_data = parse_form_entries(url=payload.test_url, only_required=False)
 
     test_content: TestContent = normalize_test_data(parsed_data)
@@ -34,12 +34,21 @@ async def upload_google_doc_test(
         async_db_session=async_db_session,
     )
 
-    return TestUploadOutput(id=test_db.id)
+    return TestResponse(id=test_db.id)
 
+async def get_test(  test_id: int, current_user: User, db_session: AsyncSession) -> TestGetResponse:
+    test_db = await get_test_from_db(
+        test_id=test_id, current_user=current_user, async_db_session=db_session
+    )
+    return TestGetResponse(
+        test_id=test_db.id,
+        test_structure=test_db.content,
+        uploaded_date=test_db.created_at
+    )
 
 async def update_test(
         test_id: int, update_data: TestUpdate, current_user: User, db_session: AsyncSession
-) -> TestUploadOutput:
+) -> TestResponse:
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
     )
@@ -50,7 +59,7 @@ async def update_test(
     await db_session.commit()
     await db_session.refresh(test_db)
 
-    return TestUploadOutput(id=test_db.id)
+    return TestResponse(id=test_db.id)
 
 
 async def submit_test(
@@ -58,7 +67,7 @@ async def submit_test(
         payload: TestSubmitPayload,
         current_user: User,
         db_session: AsyncSession,
-):
+) -> TestResponse:
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
     )
@@ -89,3 +98,5 @@ async def submit_test(
     test_db.content = answered_test_content.model_dump()
     await db_session.commit()
     await db_session.refresh(test_db)
+
+    return TestResponse(id=test_db.id)

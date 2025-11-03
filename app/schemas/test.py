@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Optional, Literal
 
 from pydantic import BaseModel
@@ -21,10 +22,11 @@ class Question(BaseModel):
 
 
 class TestContent(BaseModel):
+    submitted_date: Optional[datetime.datetime ] = None
     questions: List[Question]
 
 
-class TestUploadOutput(BaseModel):
+class TestResponse(BaseModel):
     id: int
 
 
@@ -48,6 +50,8 @@ class TestSubmitPayload(BaseModel):
     quantity: Optional[int] = 1
     answers: list[Answer]
 
+class TestGetResponse(BaseModel):
+    test_id: int
+    test_structure: TestContent
+    uploaded_date: datetime.datetime
 
-class TestSubmittedOutput(BaseModel):
-    id: int
