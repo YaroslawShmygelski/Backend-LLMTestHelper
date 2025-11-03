@@ -9,25 +9,32 @@ class QuestionType(BaseModel):
     description: str
 
 
-class Question(BaseModel):
+class TestStructure(BaseModel):
     id: int
     question: str
     type: QuestionType
     required: bool
     options: Optional[List[str]] = None
     answer_mode: Optional[Literal["llm", "random", "user"]] = None
+
+
+class AnsweredTestStructure(TestStructure):
     user_answer: Optional[str] | Optional[list] = None
     llm_answer: Optional[str] | Optional[list] = None
     random_answer: Optional[str] | Optional[list] = None
 
 
 class TestContent(BaseModel):
-    submitted_date: Optional[datetime.datetime ] = None
-    questions: List[Question]
+    questions: List[TestStructure]
+
+
+class AnsweredTestContent(BaseModel):
+    questions: List[AnsweredTestStructure]
 
 
 class TestResponse(BaseModel):
     id: int
+    run_id: int
 
 
 class GoogleDocsRequest(BaseModel):
@@ -40,6 +47,7 @@ class TestUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[TestContent] = None
 
+
 class Answer(BaseModel):
     question_id: int
     answer_mode: Optional[Literal["llm", "random", "user"]] = None
@@ -50,8 +58,8 @@ class TestSubmitPayload(BaseModel):
     quantity: Optional[int] = 1
     answers: list[Answer]
 
+
 class TestGetResponse(BaseModel):
     test_id: int
     test_structure: TestContent
     uploaded_date: datetime.datetime
-

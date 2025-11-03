@@ -7,18 +7,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.test import Test
 from app.models.orm.user import User
-from app.schemas.test import TestContent, Question, QuestionType, Answer
+from app.schemas.test import (
+    TestContent,
+    TestStructure,
+    QuestionType,
+    Answer,
+    AnsweredTestContent,
+    AnsweredTestStructure,
+)
 from app.services.utils import get_form_type_description
 
 
 def normalize_test_data(parsed_data: list[dict]) -> TestContent:
-    normalized_questions: list[Question] = []
+    normalized_questions: list[TestStructure] = []
     for question in parsed_data:
         question_type_description_dict: QuestionType = get_form_type_description(
             question["type"]
         )
         normalized_questions.append(
-            Question(
+            TestStructure(
                 id=question["id"],
                 question=question["container_name"],
                 required=question["required"],
@@ -32,7 +39,10 @@ def normalize_test_data(parsed_data: list[dict]) -> TestContent:
 
 
 async def store_test_in_db(
-    test_content: TestContent, test_url: str, current_user: User, async_db_session: AsyncSession
+    test_content: TestContent,
+    test_url: str,
+    current_user: User,
+    async_db_session: AsyncSession,
 ):
     test_db = Test(
         type="google_document",
@@ -90,29 +100,47 @@ def fill_random_value(type_id, entry_id, options, required=False, entry_name="")
     return ""
 
 
-def fill_form_entries(test_content: TestContent, payload_answers: list[Answer]) -> TestContent:
+def answer_test_questions(
+    test_content: TestContent, payload_answers: list[Answer]
+) -> AnsweredTestContent:
     """Fill form entries with fill_algorithm"""
-    questions_dict = {question.id: question for question in test_content.questions}
+    answers_map = {a.question_id: a for a in payload_answers}
+    answered_questions = []
 
-    for answer in payload_answers:
-        if answer.question_id not in questions_dict:
-            raise HTTPException(status_code=400, detail="Invalid id of a question")
+    for question in test_content.questions:
+        answered_question = AnsweredTestStructure(
+            id=question.id,
+            question=question.question,
+            type=question.type,
+            required=question.required,
+            options=question.options,
+            answer_mode=None,
+            user_answer=None,
+            llm_answer=None,
+            random_answer=None,
+        )
+        payload = answers_map.get(question.id)
+        if payload and payload.answer_mode:
+            if payload.answer_mode == "user":
+                answered_question.user_answer = payload.answer
+                answered_question.answer_mode = "user"
+            elif payload.answer_mode == "random":
+                answered_question.random_answer = fill_random_value(
+                    question.type.type_id,
+                    question.id,
+                    question.options,
+                    required=question.required,
+                    entry_name=question.question,
+                )
+                answered_question.answer_mode = "random"
+            elif payload.answer_mode == "llm":
+                ...
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown answer_mode '{payload.answer_mode}' for question {question.id}",
+                )
 
-        question = questions_dict[answer.question_id]
+        answered_questions.append(answered_question)
 
-        if answer.answer_mode=="random":
-            question.random_answer = fill_random_value(
-                question.type.type_id,
-                question.id,
-                question.options,
-                required=question.required,
-                entry_name=question.question,
-            )
-            question.answer_mode="random"
-        elif answer.answer_mode=="user":
-            question.user_answer=answer.answer
-            question.answer_mode="user"
-        elif answer.answer_mode=="llm":
-            ...
-
-    return test_content
+    return AnsweredTestContent(questions=answered_questions)

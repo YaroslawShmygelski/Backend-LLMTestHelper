@@ -41,3 +41,4 @@ class Test(DeclarativeBase, MixinModel):
     content: Mapped[TestContent] = mapped_column(
         PydanticJSON(TestContent), nullable=False
     )
+    is_submitted: Mapped[bool] = mapped_column(nullable=False, default=False)
