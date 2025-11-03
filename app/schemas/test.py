@@ -29,7 +29,7 @@ class TestUploadOutput(BaseModel):
 
 
 class GoogleDocsRequest(BaseModel):
-    link: str
+    test_url: str
 
 
 class TestUpdate(BaseModel):
@@ -51,4 +51,3 @@ class TestSubmitPayload(BaseModel):
 
 class TestSubmittedOutput(BaseModel):
     id: int
-    link: str

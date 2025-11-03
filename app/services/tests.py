@@ -32,11 +32,12 @@ def normalize_test_data(parsed_data: list[dict]) -> TestContent:
 
 
 async def store_test_in_db(
-    test_content: TestContent, current_user: User, async_db_session: AsyncSession
+    test_content: TestContent, test_url: str, current_user: User, async_db_session: AsyncSession
 ):
     test_db = Test(
         type="google_document",
         user_id=current_user.id,
+        url=test_url,
         title="BoilerPlate",
         content=test_content,
     )

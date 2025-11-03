@@ -21,12 +21,12 @@ tests_router = APIRouter(tags=["Tests"])
 
 @tests_router.post("/google-docs", response_model=TestUploadOutput, status_code=201)
 async def add_test_google_docs(
-        link: GoogleDocsRequest,
+        payload: GoogleDocsRequest,
         current_user: User = Depends(get_user_from_token),
         async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.upload_google_doc_test(
-        link, current_user, async_db_session
+        payload, current_user, async_db_session
     )
     return result
 

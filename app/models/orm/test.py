@@ -36,6 +36,7 @@ class Test(DeclarativeBase, MixinModel):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    url: Mapped[str] = mapped_column(nullable=True)
     title: Mapped[str] = mapped_column(nullable=False)
     content: Mapped[TestContent] = mapped_column(
         PydanticJSON(TestContent), nullable=False
