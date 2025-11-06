@@ -1,7 +1,4 @@
-from typing import Annotated
-
 from fastapi import HTTPException, Request, Depends
-from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession

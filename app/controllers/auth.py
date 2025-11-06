@@ -5,14 +5,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.orm.refresh_token import RefreshToken
 from app.models.orm.user import User
 from app.schemas.token_response import TokenResponse
 from app.services.jwt_tokens_handlers import (
     create_access_token,
     create_and_store_refresh_token,
     set_refresh_cookie,
-    hash_refresh_token,
     decode_token,
     get_db_refresh_token,
     get_cookies_refresh_token,

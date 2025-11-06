@@ -2,6 +2,7 @@ from datetime import datetime, UTC
 
 import requests
 from fastapi import HTTPException
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.test_run import TestRun
@@ -13,7 +14,7 @@ from app.schemas.test import (
     TestContent,
     TestUpdate,
     TestSubmitPayload,
-    TestGetResponse,
+    TestGetResponse, TestRunResponse,
 )
 from app.services.tests import (
     normalize_test_data,
@@ -109,3 +110,16 @@ async def submit_test(
     await db_session.refresh(test_db)
 
     return TestResponse(id=test_db.id, run_id=answered_test_db.id)
+
+
+async def get_test_run(run_id: int, current_user: User, db_session: AsyncSession):
+    query = await db_session.execute(Select(TestRun)
+                                     .where(TestRun.id == run_id,
+                                        TestRun.user_id == current_user.id))
+    test_run_db = query.scalar_one_or_none()
+    return TestRunResponse(
+        test_id=test_run_db.test_id,
+        run_id=test_run_db.id,
+        run_content=test_run_db.run_content,
+        submitted_date=test_run_db.submitted_date
+    )

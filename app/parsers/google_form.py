@@ -1,4 +1,3 @@
-import argparse
 import json
 import re
 from typing import Any
@@ -135,7 +134,7 @@ def parse_entries(form_data: list, only_required: bool = False) -> list[dict]:
     except (IndexError, TypeError):
         pass
 
-    # Add page history (for multi-page forms)
+    # Add page history (for multipage forms)
     if page_count > 0:
         parsed_entries.append(
             {
@@ -153,20 +152,20 @@ def parse_entries(form_data: list, only_required: bool = False) -> list[dict]:
 
 def fill_form_entries(entries, fill_algorithm):
     """Fill form entries with fill_algorithm"""
-    for index, entry in enumerate(entries):
+    for entry in entries:
         if entry.get("default_value"):
             continue
         # remove ANY_TEXT_FIELD from options to prevent choosing it
         options = (entry["options"] or [])[::]
         if ANY_TEXT_FIELD in options:
             options.remove(ANY_TEXT_FIELD)
-        entry["default_value"] = fill_algorithm(
-            entry["type"],
-            entry["id"],
-            options,
-            required=entry["required"],
-            entry_name=entry["container_name"],
-        )
+            entry["default_value"] = fill_algorithm(
+                entry["type"],
+                entry["id"],
+                options,
+                required=entry["required"],
+                entry_name=entry["container_name"],
+            )
     return entries
 
 
@@ -195,7 +194,6 @@ def parse_form_entries(url: str, only_required: bool = False) -> list[dict]:
                 },
                 ...
             ]
-
     Raises:
         ValueError: If form data could not be fetched or parsed.
     """
@@ -249,7 +247,8 @@ def generate_form_request_dict(entries, with_comment: bool = True):
     for entry in entries:
         if with_comment:
             # gen name of entry
-            result += f"    # {entry['container_name']}{(': ' + entry['name']) if entry.get('name') else ''}{' (required)' * entry['required']}\n"
+            result += f"    # {entry['container_name']}{(': ' + entry['name'])
+            if entry.get('name') else ''}{' (required)' * entry['required']}\n"
             # gen all options (if any)
             if entry["options"]:
                 result += f"    #   Options: {entry['options']}\n"

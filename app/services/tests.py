@@ -69,7 +69,7 @@ async def get_test_from_db(
 
     return test_db
 
-
+# pylint: disable=too-many-return-statements
 def fill_random_value(type_id, entry_id, options, required=False, entry_name=""):
     """Fill random value for a form entry
     Customize your own fill_algorithm here
@@ -138,7 +138,8 @@ def answer_test_questions(
             else:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Unknown answer_mode '{payload.answer_mode}' for question {question.id}",
+                    detail=f"Unknown answer_mode '{payload.answer_mode}'"
+                           f"for question {question.id}",
                 )
 
         answered_questions.append(answered_question)

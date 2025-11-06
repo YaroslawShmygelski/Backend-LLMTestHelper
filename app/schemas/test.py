@@ -34,7 +34,7 @@ class AnsweredTestContent(BaseModel):
 
 class TestResponse(BaseModel):
     id: int
-    run_id: int
+    run_id: Optional[int] = None
 
 
 class GoogleDocsRequest(BaseModel):
@@ -63,3 +63,11 @@ class TestGetResponse(BaseModel):
     test_id: int
     test_structure: TestContent
     uploaded_date: datetime.datetime
+
+
+class TestRunResponse(BaseModel):
+    test_id: int
+    run_id: int
+    run_content: AnsweredTestContent
+    llm_model: Optional[str]=None
+    submitted_date: datetime.datetime

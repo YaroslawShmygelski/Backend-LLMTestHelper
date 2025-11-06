@@ -12,9 +12,7 @@ from app.controllers.auth import (
     logout_with_token,
 )
 from app.database.postgres_config import get_async_postgres_session
-from app.models.orm.user import User
 from app.schemas.token_response import TokenResponse
-from app.services.users import get_user_from_token
 
 auth_router = APIRouter(tags=["Authentication"])
 
@@ -48,7 +46,6 @@ async def refresh_token(
 async def logout(
     request: Request,
     response: Response,
-    current_user: Annotated[User, Depends(get_user_from_token)],
     db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
 ):
     result = await logout_with_token(
