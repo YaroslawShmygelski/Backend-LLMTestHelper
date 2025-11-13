@@ -9,7 +9,7 @@ class QuestionType(BaseModel):
     description: str
 
 
-class TestStructure(BaseModel):
+class QuestionStructure(BaseModel):
     id: int
     question: str
     type: QuestionType
@@ -18,18 +18,18 @@ class TestStructure(BaseModel):
     answer_mode: Optional[Literal["llm", "random", "user"]] = None
 
 
-class AnsweredTestStructure(TestStructure):
+class AnsweredQuestionStructure(QuestionStructure):
     user_answer: Optional[str] | Optional[list] = None
     llm_answer: Optional[str] | Optional[list] = None
     random_answer: Optional[str] | Optional[list] = None
 
 
 class TestContent(BaseModel):
-    questions: List[TestStructure]
+    questions: List[QuestionStructure]
 
 
 class AnsweredTestContent(BaseModel):
-    questions: List[AnsweredTestStructure]
+    questions: List[AnsweredQuestionStructure]
 
 
 class TestResponse(BaseModel):

@@ -279,13 +279,12 @@ cython_debug/
 ### Python Patch ###
 # Poetry local configuration file - https://python-poetry.org/docs/configuration/#local-configuration
 poetry.toml
-
+.pylintrc
 # ruff
 .ruff_cache/
 
 # LSP config files
 pyrightconfig.json
 
-.pylintrc
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm

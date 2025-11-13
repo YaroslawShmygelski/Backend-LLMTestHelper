@@ -40,7 +40,7 @@ def extract_script_variables(name: str, html: str) -> Any | None:
 
 def fetch_form_data(url: str) -> list | None:
     """
-    Fetch the raw form data from a Google Form URL.
+    Fetch the raw_questions form data from a Google Form URL.
 
     Returns:
         A Python list representing the internal Google Form data structure,
@@ -198,14 +198,14 @@ def parse_form_entries(url: str, only_required: bool = False) -> list[dict]:
         ValueError: If form data could not be fetched or parsed.
     """
 
-    # Step 1: Fetch raw form data from the given URL
+    # Step 1: Fetch raw_questions form data from the given URL
     form_data = fetch_form_data(url)
     if not form_data:
         raise ValueError(
             "Failed to fetch or parse Google Form data. Check URL or form access settings."
         )
 
-    # Step 2: Parse entries (questions and fields) from the raw data
+    # Step 2: Parse entries (questions and fields) from the raw_questions data
     entries = parse_entries(form_data, only_required=only_required)
 
     # Step 3: Return parsed entries to controller or API

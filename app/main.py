@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from fastapi import FastAPI, APIRouter
 from sqlalchemy import text
-
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import auth, tests, users
 
 from app.database.postgres_config import postgres_db_engine
@@ -28,6 +27,19 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost:5173",  # фронт
+    "http://127.0.0.1:5173",  # если используешь IP
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Change OpenApi schema to Make Bearer Authorization
 app.openapi = lambda: custom_openapi(app)

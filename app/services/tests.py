@@ -9,23 +9,23 @@ from app.models.orm.test import Test
 from app.models.orm.user import User
 from app.schemas.test import (
     TestContent,
-    TestStructure,
+    QuestionStructure,
     QuestionType,
     Answer,
     AnsweredTestContent,
-    AnsweredTestStructure,
+    AnsweredQuestionStructure,
 )
 from app.services.utils import get_form_type_description
 
 
 def normalize_test_data(parsed_data: list[dict]) -> TestContent:
-    normalized_questions: list[TestStructure] = []
+    normalized_questions: list[QuestionStructure] = []
     for question in parsed_data:
         question_type_description_dict: QuestionType = get_form_type_description(
             question["type"]
         )
         normalized_questions.append(
-            TestStructure(
+            QuestionStructure(
                 id=question["id"],
                 question=question["container_name"],
                 required=question["required"],
@@ -108,7 +108,7 @@ def answer_test_questions(
     answered_questions = []
 
     for question in test_content.questions:
-        answered_question = AnsweredTestStructure(
+        answered_question = AnsweredQuestionStructure(
             id=question.id,
             question=question.question,
             type=question.type,
