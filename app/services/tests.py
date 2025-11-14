@@ -5,8 +5,11 @@ from fastapi import HTTPException
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.llm.llm_config import LLMClient, LLMSolverState
+from app.llm.llm_test_solver import LLMTestSolverAgent
 from app.models.orm.test import Test
 from app.models.orm.user import User
+from app.schemas.llm import LLMQuestionIn, LLMQuestionsListIn
 from app.schemas.test import (
     TestContent,
     QuestionStructure,
@@ -69,6 +72,7 @@ async def get_test_from_db(
 
     return test_db
 
+
 # pylint: disable=too-many-return-statements
 def fill_random_value(type_id, entry_id, options, required=False, entry_name=""):
     """Fill random value for a form entry
@@ -100,13 +104,39 @@ def fill_random_value(type_id, entry_id, options, required=False, entry_name="")
     return ""
 
 
+def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
+    if llm_input_questions:
+        llm_questions_list_in = LLMQuestionsListIn(
+            questions=[
+                LLMQuestionIn(
+                    id=q.id, question=q.question, type=q.type, options=q.options
+                )
+                for q in llm_input_questions
+            ]
+        )
+
+        llm_client = LLMClient()
+        solver_agent = LLMTestSolverAgent(llm_client)
+
+        state = LLMSolverState(questions=llm_questions_list_in)
+
+        result_state: LLMSolverState = solver_agent.call_llm(state)
+        validated_llm_answers = result_state.get("validated_answers")
+        llm_answers_map = {
+            q.question_id: q.answer for q in validated_llm_answers.questions
+        }
+
+        return llm_answers_map
+    return None
+
+
 def answer_test_questions(
     test_content: TestContent, payload_answers: list[Answer]
 ) -> AnsweredTestContent:
     """Fill form entries with fill_algorithm"""
     answers_map = {a.question_id: a for a in payload_answers}
     answered_questions = []
-
+    llm_input_questions = []
     for question in test_content.questions:
         answered_question = AnsweredQuestionStructure(
             id=question.id,
@@ -122,9 +152,10 @@ def answer_test_questions(
         payload = answers_map.get(question.id)
         if payload and payload.answer_mode:
             if payload.answer_mode == "user":
-                answered_question.user_answer = payload.answer
                 answered_question.answer_mode = "user"
+                answered_question.user_answer = payload.answer
             elif payload.answer_mode == "random":
+                answered_question.answer_mode = "random"
                 answered_question.random_answer = fill_random_value(
                     question.type.type_id,
                     question.id,
@@ -132,16 +163,21 @@ def answer_test_questions(
                     required=question.required,
                     entry_name=question.question,
                 )
-                answered_question.answer_mode = "random"
             elif payload.answer_mode == "llm":
-                ...
+                answered_question.answer_mode = "llm"
+                llm_input_questions.append(question)
             else:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Unknown answer_mode '{payload.answer_mode}'"
-                           f"for question {question.id}",
+                    f"for question {question.id}",
                 )
-
         answered_questions.append(answered_question)
+
+    llm_answers_map = answer_llm_questions(llm_input_questions)
+
+    for aq in answered_questions:
+        if aq.answer_mode == "llm" and aq.id in llm_answers_map:
+            aq.llm_answer = llm_answers_map[aq.id]
 
     return AnsweredTestContent(questions=answered_questions)

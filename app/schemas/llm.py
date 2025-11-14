@@ -11,13 +11,15 @@ class LLMQuestionIn(BaseModel):
     type: QuestionType
     options: Optional[List[str]] = None
 
+
 class LLMQuestionsListIn(BaseModel):
     questions: List[LLMQuestionIn]
 
 
 class LLMQuestionOut(BaseModel):
     question_id: int
-    answer: str
+    answer: str | list[str]
+
 
 class LLMQuestionsListOut(BaseModel):
     questions: List[LLMQuestionOut]

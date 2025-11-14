@@ -15,6 +15,7 @@ dependencies = [
     "generativeai>=0.0.1",
     "jwt>=1.4.0",
     "langchain-google-genai>=3.0.0",
+    "langgraph>=1.0.3",
     "passlib>=1.7.4",
     "psycopg2>=2.9.11",
     "pydantic-settings>=2.11.0",

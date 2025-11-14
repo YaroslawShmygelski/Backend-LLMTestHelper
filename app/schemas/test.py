@@ -69,5 +69,5 @@ class TestRunResponse(BaseModel):
     test_id: int
     run_id: int
     run_content: AnsweredTestContent
-    llm_model: Optional[str]=None
+    llm_model: Optional[str] = None
     submitted_date: datetime.datetime

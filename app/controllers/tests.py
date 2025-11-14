@@ -14,7 +14,8 @@ from app.schemas.test import (
     TestContent,
     TestUpdate,
     TestSubmitPayload,
-    TestGetResponse, TestRunResponse,
+    TestGetResponse,
+    TestRunResponse,
 )
 from app.services.tests import (
     normalize_test_data,
@@ -113,13 +114,13 @@ async def submit_test(
 
 
 async def get_test_run(run_id: int, current_user: User, db_session: AsyncSession):
-    query = await db_session.execute(Select(TestRun)
-                                     .where(TestRun.id == run_id,
-                                        TestRun.user_id == current_user.id))
+    query = await db_session.execute(
+        Select(TestRun).where(TestRun.id == run_id, TestRun.user_id == current_user.id)
+    )
     test_run_db = query.scalar_one_or_none()
     return TestRunResponse(
         test_id=test_run_db.test_id,
         run_id=test_run_db.id,
         run_content=test_run_db.run_content,
-        submitted_date=test_run_db.submitted_date
+        submitted_date=test_run_db.submitted_date,
     )
