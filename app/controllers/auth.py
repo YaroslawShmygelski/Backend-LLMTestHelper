@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.user import User
 from app.schemas.token_response import TokenResponse
-from app.services.jwt_tokens_handlers import (
+from app.utils.jwt_tokens_handlers import (
     create_access_token,
     create_and_store_refresh_token,
     set_refresh_cookie,

@@ -18,7 +18,7 @@ from app.schemas.test import (
     AnsweredTestContent,
     AnsweredQuestionStructure,
 )
-from app.services.utils import get_form_type_description
+from app.utils.configs import get_form_type_description
 
 
 def normalize_test_data(parsed_data: list[dict]) -> TestContent:

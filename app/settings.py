@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+LOGGING_LEVEL = "DEBUG"
 
-# pylint: disable=too-few-public-methods
+
 class PostgresDBSettings(BaseSettings):
     ENV: str = "dev"
     POSTGRES_USER: str

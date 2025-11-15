@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.postgres_config import get_async_postgres_session
 from app.models.orm.user import User
-from app.services.jwt_tokens_handlers import decode_token
+from app.utils.jwt_tokens_handlers import decode_token
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
@@ -32,7 +32,6 @@ async def get_user_from_token(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        print(token)
         payload: dict = decode_token(token)
         user_id: int = int(payload.get("sub"))
         if user_id is None:
