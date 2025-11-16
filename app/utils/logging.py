@@ -44,7 +44,7 @@ def setup_logging():
     handler.setFormatter(formatter)
     root.addHandler(handler)
 
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)
     logging.getLogger("uvicorn.error").setLevel(logging.INFO)
     logging.getLogger("python_multipart.multipart").setLevel(logging.ERROR)

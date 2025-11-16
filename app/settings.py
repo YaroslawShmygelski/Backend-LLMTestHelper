@@ -1,3 +1,5 @@
+import os
+
 from fastapi.openapi.utils import get_openapi
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings
@@ -5,11 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-LOGGING_LEVEL = "DEBUG"
+LOGGING_LEVEL: str = "DEBUG"
+ENV: str = os.getenv("ENV", "prod")
 
 
 class PostgresDBSettings(BaseSettings):
-    ENV: str = "dev"
+    ENV: str = ENV
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_SERVER: str

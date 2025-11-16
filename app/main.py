@@ -3,7 +3,7 @@
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import auth, tests, users
@@ -11,6 +11,12 @@ from app.api.v1.routes import auth, tests, users
 from app.database.postgres_config import postgres_db_engine
 from app.middlewares import LoggingMiddleware
 from app.settings import custom_openapi
+from app.utils.exception_handlers import (
+    unexpected_exception_handler,
+    expected_exception_handler,
+    http_exception_handler,
+)
+from app.utils.exception_types import BasicAppError
 from app.utils.logging import setup_logging
 
 load_dotenv()
@@ -42,6 +48,11 @@ app.add_middleware(
 )
 app.add_middleware(LoggingMiddleware)
 
+# Custom Exception handlers
+app.add_exception_handler(Exception, unexpected_exception_handler)
+app.add_exception_handler(BasicAppError, expected_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+
 # Change OpenApi schema to Make Bearer Authorization
 app.openapi = lambda: custom_openapi(app)
 
@@ -50,7 +61,6 @@ api_v1_router = APIRouter(prefix="/api/v1")
 api_v1_router.include_router(auth.auth_router, prefix="/auth")
 api_v1_router.include_router(tests.tests_router, prefix="/tests")
 api_v1_router.include_router(users.user_router, prefix="/users")
-
 
 app.include_router(api_v1_router)
 
