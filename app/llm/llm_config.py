@@ -14,7 +14,7 @@ class LLMGeminiSettings:
     MODEL: str = "gemini-2.5-flash"
     LLM_TEMPERATURE: float = 0
     LLM_TIMEOUT: int = 30
-    MAX_RETRIES: int = 2
+    MAX_RETRIES: int = 3
     MAX_AGENT_RETRIES: int = 3
 
 
@@ -31,7 +31,6 @@ class LLMClient:
     def invoke_llm(self, prompt: str) -> str:
         response = self.model.invoke(prompt)
         result = response.content.strip()
-        print(f"{result=}")
         return result
 
 

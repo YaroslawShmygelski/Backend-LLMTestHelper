@@ -1,4 +1,5 @@
 import json
+import logging
 
 from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
@@ -7,11 +8,14 @@ from app.llm.llm_config import (
     LLMClient,
     LLMSolverState,
     build_test_solver_prompt,
+    LLMGeminiSettings,
 )
 from app.schemas.llm import (
     LLMQuestionsListIn,
     LLMQuestionsListOut,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class LLMTestSolverAgent:
@@ -28,7 +32,7 @@ class LLMTestSolverAgent:
         prompt = self.__create_prompt(state.questions)
         if state.error:
             prompt += f"\nPlease change you answers it solver error in previous call:{state.error}"
-        print(prompt)
+        logger.info(f"Generating attempt with prompt", extra={"prompt": prompt})
         state.raw_answers = self.llm_model.invoke_llm(prompt)
         return state
 
@@ -42,8 +46,12 @@ class LLMTestSolverAgent:
         except ValidationError as e:
             state.increment_attempts()
             state.error = str(e)
-            if state.attempts >= 2:
+            if state.attempts >= LLMGeminiSettings.MAX_RETRIES:
                 state.error = f"Reached Maximum retries with error {e}"
+                logger.error(
+                    "LLM reached Maximum retries with error",
+                    extra={"error": state.error},
+                )
         return state
 
     @staticmethod
@@ -67,4 +75,5 @@ class LLMTestSolverAgent:
     def call_llm(self, state: LLMSolverState) -> LLMSolverState:
         res = self._build_graph()
         result = res.invoke(state)
+        logger.info(f"LLM Generation Result", extra={"result": result})
         return result

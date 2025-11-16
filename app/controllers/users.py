@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, Request, Depends
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -6,6 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.orm.user import User
 from app.schemas.users import UserCreate, UserResult, UserBase
 from app.services.users import get_password_hash, get_user_from_token
+from app.utils.exception_types import ConflictError
+from app.utils.logging import correlation_id
+
+logger = logging.getLogger(__name__)
 
 
 async def register_user(
@@ -13,7 +19,7 @@ async def register_user(
 ) -> UserResult:
     res = await db_session.execute(select(User).where(User.email == user_payload.email))
     if res.scalars().first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise ConflictError(message="Email already registered")
 
     res = await db_session.execute(
         select(User).where(
@@ -22,7 +28,7 @@ async def register_user(
         )
     )
     if res.scalars().first():
-        raise HTTPException(status_code=400, detail="Phone number already registered")
+        raise ConflictError(message="Phone number already registered")
 
     real_ip = request.headers.get("x-real-ip")
     forward_for = request.headers.get("x-forwarded-for")
@@ -45,6 +51,16 @@ async def register_user(
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
+        logger.info(
+            "user_created",
+            extra={
+                "user_id": user.id,
+                "email": user.email,
+                "mobile_number": user.phone_number,
+                "ip": user.ip_address,
+                "correlation_id": correlation_id.get(),
+            },
+        )
         return UserResult.model_validate(user)
     except IntegrityError as e:
         raise HTTPException(

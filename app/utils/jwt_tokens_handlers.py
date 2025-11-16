@@ -10,6 +10,7 @@ from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.refresh_token import RefreshToken
+from app.utils.exception_types import UnauthorizedError
 
 load_dotenv()
 
@@ -100,9 +101,8 @@ async def revoke_user_tokens(db_session: AsyncSession, user_id: int) -> None:
 
 def get_cookies_refresh_token(request: Request) -> str:
     refresh_token = request.cookies.get("refresh_token")
-    print(f"{refresh_token=}")
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="Incorrect refresh token")
+        raise UnauthorizedError(message="Incorrect refresh token")
     return refresh_token
 
 
@@ -115,9 +115,10 @@ async def get_db_refresh_token(
         select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     )
     db_token = result.scalar_one_or_none()
-    print(f"{db_token=}")
 
-    if not db_token or db_token.revoked or db_token.expires_at < datetime.now(UTC):
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    if not db_token or db_token.revoked:
+        raise UnauthorizedError(message="Refresh token is wrong or revoked")
+    if not db_token.expires_at < datetime.now(UTC):
+        raise UnauthorizedError(message="Refresh token expired")
 
     return db_token

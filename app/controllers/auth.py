@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, UTC
 
 from fastapi import HTTPException, Request, Response
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.user import User
 from app.schemas.token_response import TokenResponse
+from app.utils.exception_types import NotFoundError, ForbiddenError, UnauthorizedError
 from app.utils.jwt_tokens_handlers import (
     create_access_token,
     create_and_store_refresh_token,
@@ -16,6 +18,8 @@ from app.utils.jwt_tokens_handlers import (
     get_cookies_refresh_token,
 )
 from app.services.users import verify_password
+
+logger = logging.getLogger(__name__)
 
 
 async def login_for_access_token(
@@ -29,27 +33,18 @@ async def login_for_access_token(
     )
     user = result.scalar_one_or_none()
 
+    logger.info("User is found", extra={"user_id": user.id})
+
     if user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise NotFoundError("User Not Found")
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="Inactive user",
-        )
+        raise ForbiddenError("User is not active")
 
     if not verify_password(
         plain_password=form_data.password, hashed_password=user.password_hash
     ):
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise UnauthorizedError("Incorrect username or password")
 
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = await create_and_store_refresh_token(db_session, user.id, request)
@@ -71,20 +66,23 @@ async def refresh_access_token(
     db_token = await get_db_refresh_token(db_session, refresh_token)
 
     db_token.revoked = True
+    logger.info(
+        "Old refresh token is revoked:",
+        extra={"refresh_token_id": db_token.id, "user_id": db_token.user_id},
+    )
     await db_session.commit()
 
     user_id = decode_token(refresh_token).get("sub")
-    print(user_id)
 
     new_refresh_token = await create_and_store_refresh_token(
         db_session, user_id, request
     )
-    print(new_refresh_token)
     new_access_token = create_access_token(data={"sub": str(user_id)})
 
     await db_session.commit()
 
     set_refresh_cookie(response, new_refresh_token)
+    logger.info("New refresh token is created:", extra={"user_id": db_token.user_id})
 
     return TokenResponse(access_token=new_access_token, token_type="bearer")
 
@@ -100,3 +98,5 @@ async def logout_with_token(
     await db_session.commit()
 
     response.delete_cookie("refresh_token")
+
+    logger.info("User logged out:", extra={"user_id": db_token.user_id})

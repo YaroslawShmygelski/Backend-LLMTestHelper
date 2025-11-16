@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Any
 
@@ -12,6 +13,7 @@ ANY_TEXT_FIELD = "ANY TEXT!!"
 
 # ---------------- FETCHING ---------------- #
 
+logger = logging.getLogger(__name__)
 
 def get_form_response_url(url: str) -> str:
     """Convert a normal Google Form URL to a formResponse URL."""
@@ -50,16 +52,18 @@ def fetch_form_data(url: str) -> list | None:
     try:
         response = requests.get(url, timeout=10)
     except requests.RequestException as e:
-        print(f"[ERROR] Failed to fetch form: {e}")
+        logger.error(f"Failed to fetch form: {e}")
+
         return None
 
     if response.status_code != 200:
-        print(f"[ERROR] HTTP {response.status_code}: Cannot fetch form data.")
+        logger.error(f"HTTP {response.status_code}: Cannot fetch form data.")
+
         return None
 
     data = extract_script_variables(ALL_DATA_FIELDS, response.text)
     if not data:
-        print("[ERROR] Cannot extract FB_PUBLIC_LOAD_DATA_. Possibly login required.")
+        logger.error("Cannot extract FB_PUBLIC_LOAD_DATA_. Possibly login required")
         return None
 
     return data
@@ -80,7 +84,7 @@ def parse_entries(form_data: list, only_required: bool = False) -> list[dict]:
         A list of parsed field dictionaries.
     """
     if not form_data or not form_data[1] or not form_data[1][1]:
-        print("[ERROR] Invalid form data structure.")
+        logger.error("Invalid form data structure.")
         return []
 
     entries_data = form_data[1][1]
@@ -235,7 +239,7 @@ def get_form_submit_request(
         # save as file
         with open(output, "w", encoding="utf-8") as f:
             f.write(result)
-            print(f"Saved to {output}", flush=True)
+            logger.info(f"Form saved to {output}")
             f.close()
     return None
 

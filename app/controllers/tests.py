@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, UTC
 
 import requests
@@ -23,11 +24,22 @@ from app.services.tests import (
     get_test_from_db,
     answer_test_questions,
 )
+from app.utils.exception_types import ServerError
+from app.utils.logging import correlation_id
+
+logger = logging.getLogger(__name__)
 
 
 async def upload_google_doc_test(
     payload: GoogleDocsRequest, current_user: User, async_db_session: AsyncSession
 ) -> TestResponse:
+    logger.info(
+        "google_doc_import",
+        extra={
+            "user_id": current_user.id,
+            "test_url": payload.test_url,
+        },
+    )
     parsed_data = parse_form_entries(url=payload.test_url, only_required=False)
 
     test_content: TestContent = normalize_test_data(parsed_data)
@@ -39,6 +51,15 @@ async def upload_google_doc_test(
         async_db_session=async_db_session,
     )
 
+    logger.info(
+        "Test saved to DB",
+        extra={
+            "test_id": test_db.id,
+            "user_id": current_user.id,
+            "test_url": payload.test_url,
+        },
+    )
+
     return TestResponse(id=test_db.id)
 
 
@@ -47,6 +68,14 @@ async def get_test(
 ) -> TestGetResponse:
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
+    )
+
+    logger.info(
+        "Test retrieved from DB",
+        extra={
+            "test_id": test_db.id,
+            "user_id": current_user.id,
+        },
     )
     return TestGetResponse(
         test_id=test_db.id,
@@ -62,11 +91,28 @@ async def update_test(
         test_id=test_id, current_user=current_user, async_db_session=db_session
     )
 
+    logger.info(
+        "Updating test",
+        extra={
+            "test_id": test_db.id,
+            "user_id": current_user.id,
+            "updated_fields": list(update_data.model_dump(exclude_none=True).keys()),
+        },
+    )
+
     for key, value in update_data.model_dump(exclude_none=True).items():
         setattr(test_db, key, value)
 
     await db_session.commit()
     await db_session.refresh(test_db)
+
+    logger.info(
+        "Test updated successfully",
+        extra={
+            "test_id": test_db.id,
+            "user_id": current_user.id,
+        },
+    )
 
     return TestResponse(id=test_db.id)
 
@@ -79,6 +125,14 @@ async def submit_test(
 ) -> TestResponse:
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
+    )
+
+    logger.info(
+        "Submitting test",
+        extra={
+            "test_id": test_db.id,
+            "user_id": current_user.id,
+        },
     )
 
     answered_test_content = answer_test_questions(
@@ -95,9 +149,16 @@ async def submit_test(
         formed_url: str = get_form_response_url(url=test_db.url)
         res = requests.post(url=formed_url, data=data, timeout=5)
         if res.status_code != 200:
-            raise HTTPException(status_code=500, detail="Error sending request to form")
-
-        print(res.status_code)
+            logger.error(
+                "Error submitting test to Google form",
+                extra={
+                    "test_id": test_db.id,
+                    "user_id": current_user.id,
+                    "status_code": res.status_code,
+                    "url": test_db.url,
+                },
+            )
+            raise ServerError(message="Error submitting test to Google form")
 
     test_db.is_submitted = True
     answered_test_db = TestRun(
@@ -106,9 +167,20 @@ async def submit_test(
         run_content=answered_test_content,
         submitted_date=datetime.now(UTC),
     )
+
     db_session.add(answered_test_db)
     await db_session.commit()
     await db_session.refresh(test_db)
+
+    logger.info(
+        "Test submitted successfully",
+        extra={
+            "test_id": test_db.id,
+            "run_id": answered_test_db.id,
+            "user_id": current_user.id,
+            "correlation_id": correlation_id.get(),
+        },
+    )
 
     return TestResponse(id=test_db.id, run_id=answered_test_db.id)
 
@@ -118,6 +190,16 @@ async def get_test_run(run_id: int, current_user: User, db_session: AsyncSession
         Select(TestRun).where(TestRun.id == run_id, TestRun.user_id == current_user.id)
     )
     test_run_db = query.scalar_one_or_none()
+
+    logger.info(
+        "TestRun retrieved",
+        extra={
+            "run_id": test_run_db.id,
+            "test_id": test_run_db.test_id,
+            "user_id": current_user.id,
+            "correlation_id": correlation_id.get(),
+        },
+    )
     return TestRunResponse(
         test_id=test_run_db.test_id,
         run_id=test_run_db.id,

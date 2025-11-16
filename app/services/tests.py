@@ -1,4 +1,5 @@
 import datetime
+import logging
 import random
 
 from fastapi import HTTPException
@@ -19,6 +20,8 @@ from app.schemas.test import (
     AnsweredQuestionStructure,
 )
 from app.utils.configs import get_form_type_description
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_test_data(parsed_data: list[dict]) -> TestContent:
@@ -122,6 +125,7 @@ def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
 
         result_state: LLMSolverState = solver_agent.call_llm(state)
         validated_llm_answers = result_state.get("validated_answers")
+
         llm_answers_map = {
             q.question_id: q.answer for q in validated_llm_answers.questions
         }
@@ -180,4 +184,5 @@ def answer_test_questions(
         if aq.answer_mode == "llm" and aq.id in llm_answers_map:
             aq.llm_answer = llm_answers_map[aq.id]
 
+    logger.info("Answered Test Content", extra={"questions": answered_questions})
     return AnsweredTestContent(questions=answered_questions)

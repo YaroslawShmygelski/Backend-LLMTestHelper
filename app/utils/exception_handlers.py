@@ -1,8 +1,8 @@
 import logging
 
-from fastapi.exceptions import HTTPException
 from fastapi import Request
 from starlette.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.settings import ENV
 from app.utils.exception_types import BasicAppError
@@ -45,7 +45,9 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content=body)
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
     cid = correlation_id.get()
     logger.error(
         "HTTPException",
