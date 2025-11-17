@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, UTC
 
-from fastapi import HTTPException, Request, Response
+from fastapi import Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

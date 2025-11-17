@@ -1,11 +1,12 @@
+import asyncio
 import logging
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 
-import requests
-from fastapi import HTTPException
+import aiohttp
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database.postgres_config import async_postgres_session
 from app.models.orm.test_run import TestRun
 from app.models.orm.user import User
 from app.parsers.google_form import parse_form_entries, get_form_response_url
@@ -24,6 +25,7 @@ from app.services.tests import (
     get_test_from_db,
     answer_test_questions,
 )
+from app.settings import MAX_PARALLEL_TASKS
 from app.utils.exception_types import ServerError
 from app.utils.logging import correlation_id
 
@@ -117,72 +119,95 @@ async def update_test(
     return TestResponse(id=test_db.id)
 
 
-async def submit_test(
+async def submit_single_test(
     test_id: int,
     payload: TestSubmitPayload,
     current_user: User,
-    db_session: AsyncSession,
 ) -> TestResponse:
-    test_db = await get_test_from_db(
-        test_id=test_id, current_user=current_user, async_db_session=db_session
-    )
+    async with async_postgres_session() as session:
+        test_db = await get_test_from_db(
+            test_id=test_id,
+            current_user=current_user,
+            async_db_session=session,
+        )
 
-    logger.info(
-        "Submitting test",
-        extra={
-            "test_id": test_db.id,
-            "user_id": current_user.id,
-        },
-    )
+        logger.info(
+            "Submitting test",
+            extra={"test_id": test_db.id, "user_id": current_user.id},
+        )
 
-    answered_test_content = answer_test_questions(
-        test_content=test_db.content, payload_answers=payload.answers
-    )
+        answered_test_content = await answer_test_questions(
+            test_content=test_db.content,
+            payload_answers=payload.answers,
+        )
 
-    data = {}
-    for entry in answered_test_content.questions:
-        value = entry.user_answer or entry.llm_answer or entry.random_answer or None
+        data = {}
+        for entry in answered_test_content.questions:
+            value = entry.user_answer or entry.llm_answer or entry.random_answer or None
+            data[f"entry.{entry.id}"] = value
 
-        data[f"entry.{entry.id}"] = value
+        if test_db.url:
+            formed_url = get_form_response_url(url=test_db.url)
+            async with aiohttp.ClientSession() as client:
+                async with client.post(formed_url, data=data, timeout=5) as resp:
+                    if resp.status != 200:
+                        logger.error(
+                            "Error submitting test to Google form",
+                            extra={
+                                "test_id": test_db.id,
+                                "user_id": current_user.id,
+                                "status_code": resp.status,
+                                "url": test_db.url,
+                            },
+                        )
+                        raise ServerError(
+                            message="Error submitting test to Google form"
+                        )
 
-    if test_db.url:
-        formed_url: str = get_form_response_url(url=test_db.url)
-        res = requests.post(url=formed_url, data=data, timeout=5)
-        if res.status_code != 200:
-            logger.error(
-                "Error submitting test to Google form",
-                extra={
-                    "test_id": test_db.id,
-                    "user_id": current_user.id,
-                    "status_code": res.status_code,
-                    "url": test_db.url,
-                },
+        test_db.is_submitted = True
+
+        answered_test_db = TestRun(
+            test_id=test_db.id,
+            user_id=current_user.id,
+            run_content=answered_test_content,
+            submitted_date=datetime.now(timezone.utc),
+        )
+
+        session.add(answered_test_db)
+        await session.commit()
+        await session.refresh(answered_test_db)
+
+        logger.info(
+            "Test submitted successfully",
+            extra={
+                "test_id": test_db.id,
+                "run_id": answered_test_db.id,
+                "user_id": current_user.id,
+                "correlation_id": correlation_id.get(),
+            },
+        )
+
+        return TestResponse(id=test_db.id, run_id=answered_test_db.id)
+
+
+async def run_test_batch(
+    test_id: int,
+    payload: TestSubmitPayload,
+    current_user: User,
+):
+    sem = asyncio.Semaphore(MAX_PARALLEL_TASKS)
+
+    async def wrapped_call():
+        async with sem:
+            return await submit_single_test(
+                test_id=test_id,
+                payload=payload,
+                current_user=current_user,
             )
-            raise ServerError(message="Error submitting test to Google form")
 
-    test_db.is_submitted = True
-    answered_test_db = TestRun(
-        test_id=test_db.id,
-        user_id=current_user.id,
-        run_content=answered_test_content,
-        submitted_date=datetime.now(UTC),
-    )
-
-    db_session.add(answered_test_db)
-    await db_session.commit()
-    await db_session.refresh(test_db)
-
-    logger.info(
-        "Test submitted successfully",
-        extra={
-            "test_id": test_db.id,
-            "run_id": answered_test_db.id,
-            "user_id": current_user.id,
-            "correlation_id": correlation_id.get(),
-        },
-    )
-
-    return TestResponse(id=test_db.id, run_id=answered_test_db.id)
+    tasks = [wrapped_call() for _ in range(payload.quantity)]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return results
 
 
 async def get_test_run(run_id: int, current_user: User, db_session: AsyncSession):

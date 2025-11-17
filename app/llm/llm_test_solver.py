@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 
@@ -75,5 +76,10 @@ class LLMTestSolverAgent:
     def call_llm(self, state: LLMSolverState) -> LLMSolverState:
         res = self._build_graph()
         result = res.invoke(state)
-        logger.info(f"LLM Generation Result", extra={"result": result})
+        logger.info("LLM Generation Result", extra={"result": result})
+        return result
+
+    async def call_llm_async(self, state: LLMSolverState) -> LLMSolverState:
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, lambda: self.call_llm(state))
         return result

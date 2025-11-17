@@ -5,7 +5,7 @@ from typing import Any
 
 from jose import jwt
 from dotenv import load_dotenv
-from fastapi import Request, Response, HTTPException
+from fastapi import Request, Response
 from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

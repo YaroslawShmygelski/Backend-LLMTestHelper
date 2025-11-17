@@ -12,12 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 async def expected_exception_handler(
-    exc: BasicAppError, request: Request
+    request: Request,
+    exc: BasicAppError,
 ) -> JSONResponse:
-    cid = correlation_id().get()
+    cid = correlation_id.get()
     logger.error(
         "Handled Application Error",
-        extra={"status_code": exc.status_code, "message": exc.message, "cid": cid},
+        extra={
+            "status_code": exc.status_code,
+            "error_message": exc.message,
+            "cid": cid,
+        },
     )
 
     return JSONResponse(

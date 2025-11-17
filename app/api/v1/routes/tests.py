@@ -71,17 +71,21 @@ async def update_test(
     return result
 
 
-@tests_router.post("/submit/{test_id}", response_model=TestResponse, status_code=200)
+@tests_router.post("/submit/{test_id}", status_code=200)
 async def submit_test(
     test_id: int,
     payload: TestSubmitPayload,
     current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
-) -> TestResponse:
-    result = await test_controllers.submit_test(
+):
+    results = await test_controllers.run_test_batch(
         test_id=test_id,
         payload=payload,
         current_user=current_user,
-        db_session=async_db_session,
     )
-    return result
+    success_count = sum(1 for r in results if not isinstance(r, Exception))
+    failure_count = len(results) - success_count
+    return {
+        "status": "done",
+        "success_count": success_count,
+        "failure_count": failure_count,
+    }

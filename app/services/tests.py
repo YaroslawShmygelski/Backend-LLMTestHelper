@@ -107,7 +107,7 @@ def fill_random_value(type_id, entry_id, options, required=False, entry_name="")
     return ""
 
 
-def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
+async def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
     if llm_input_questions:
         llm_questions_list_in = LLMQuestionsListIn(
             questions=[
@@ -123,7 +123,7 @@ def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
 
         state = LLMSolverState(questions=llm_questions_list_in)
 
-        result_state: LLMSolverState = solver_agent.call_llm(state)
+        result_state: LLMSolverState = await solver_agent.call_llm_async(state)
         validated_llm_answers = result_state.get("validated_answers")
 
         llm_answers_map = {
@@ -134,7 +134,7 @@ def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
     return None
 
 
-def answer_test_questions(
+async def answer_test_questions(
     test_content: TestContent, payload_answers: list[Answer]
 ) -> AnsweredTestContent:
     """Fill form entries with fill_algorithm"""
@@ -178,7 +178,7 @@ def answer_test_questions(
                 )
         answered_questions.append(answered_question)
 
-    llm_answers_map = answer_llm_questions(llm_input_questions)
+    llm_answers_map = await answer_llm_questions(llm_input_questions)
 
     for aq in answered_questions:
         if aq.answer_mode == "llm" and aq.id in llm_answers_map:

@@ -15,6 +15,7 @@ ANY_TEXT_FIELD = "ANY TEXT!!"
 
 logger = logging.getLogger(__name__)
 
+
 def get_form_response_url(url: str) -> str:
     """Convert a normal Google Form URL to a formResponse URL."""
     url = url.replace("/viewform", "/formResponse")

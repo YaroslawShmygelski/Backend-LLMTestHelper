@@ -3,7 +3,7 @@ import json
 import logging
 import sys
 import traceback
-from datetime import datetime, timezone, UTC
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Tuple
 from urllib.parse import parse_qs
@@ -16,30 +16,30 @@ correlation_id = contextvars.ContextVar("correlation_id", default=None)
 
 
 class CustomJsonFormatter(python_jsonlogger.JsonFormatter):
-    def add_fields(self, log_record, record, message_dict):
-        super().add_fields(log_record, record, message_dict)
+    def add_fields(self, log_data, record, message_dict):
+        super().add_fields(log_data, record, message_dict)
 
-        log_record["path"] = record.pathname
-        log_record["line"] = record.lineno
+        log_data["path"] = record.pathname
+        log_data["line"] = record.lineno
 
-        log_record.pop("pathname", None)
-        log_record.pop("lineno", None)
+        log_data.pop("pathname", None)
+        log_data.pop("lineno", None)
 
-        if not log_record.get("timestamp"):
-            log_record["timestamp"] = datetime.fromtimestamp(
+        if not log_data.get("timestamp"):
+            log_data["timestamp"] = datetime.fromtimestamp(
                 record.created, UTC
             ).isoformat()
 
-        log_record["correlation_id"] = correlation_id.get()
+        log_data["correlation_id"] = correlation_id.get()
 
-        log_record["path"] = str(
+        log_data["path"] = str(
             Path(record.pathname).resolve().relative_to(Path().resolve())
         )
 
-        log_record["level"] = record.levelname
+        log_data["level"] = record.levelname
 
         if record.exc_info:
-            log_record["exception"] = "".join(
+            log_data["exception"] = "".join(
                 traceback.format_exception(*record.exc_info)
             )
 

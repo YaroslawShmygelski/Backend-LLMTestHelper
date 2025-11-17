@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import text
-from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import auth, tests, users
 
 from app.database.postgres_config import postgres_db_engine

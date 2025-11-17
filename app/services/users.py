@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from passlib.context import CryptContext
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.postgres_config import get_async_postgres_session
 from app.models.orm.user import User
+from app.utils.exception_types import NotFoundError, UnauthorizedError
 from app.utils.jwt_tokens_handlers import decode_token
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -26,11 +27,7 @@ async def get_user_from_token(
     db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
     token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="token"))],
 ) -> User:
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    credentials_exception = UnauthorizedError(message="Refresh token is invalid")
     try:
         payload: dict = decode_token(token)
         user_id: int = int(payload.get("sub"))
@@ -42,6 +39,6 @@ async def get_user_from_token(
     result = await db_session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise NotFoundError("User from token does not exist")
 
     return user

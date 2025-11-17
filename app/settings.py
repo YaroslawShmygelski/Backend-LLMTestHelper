@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 LOGGING_LEVEL: str = "DEBUG"
+MAX_PARALLEL_TASKS = 7
 ENV: str = os.getenv("ENV", "prod")
 
 
