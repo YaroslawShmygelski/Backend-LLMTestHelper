@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 import uuid
@@ -5,7 +6,7 @@ import uuid
 from fastapi import Request, FastAPI
 from starlette.types import Scope, Receive, Send
 
-from app.utils.logging import correlation_id, log_headers, log_request_body
+from app.utils.logging import correlation_id, log_headers, log_request_body, log_response_body
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class LoggingMiddleware:
 
         status_code = None
         bytes_sent = 0
+        response_body_chunks: list[bytes] = []
 
         async def send_wrapper(message):
             nonlocal status_code, bytes_sent
@@ -58,6 +60,8 @@ class LoggingMiddleware:
                 body = message.get("body", b"")
                 bytes_sent += len(body)
 
+                response_body_chunks.append(body)
+
             return await send(message)
 
         start_time = time.time()
@@ -65,16 +69,18 @@ class LoggingMiddleware:
         response = await self.app(scope, receive_with_body, send_wrapper)
 
         execution_time = round((time.time() - start_time), 4)
+        response_body = await log_response_body(response_body_chunks)
 
         logger.info(
             "HTTP Response",
             extra={
                 "method": request.method,
-                "status_code": status_code,
                 "path": request.url.path,
+                "status_code": status_code,
                 "duration_s": execution_time,
                 "bytes_sent": bytes_sent,
-                "correlation_id": correlation_id.get(),
+                "response": response_body,
+                "correlation_id": cid,
             },
         )
 
