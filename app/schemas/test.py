@@ -33,7 +33,7 @@ class AnsweredTestContent(BaseModel):
 
 
 class TestResponse(BaseModel):
-    id: int
+    test_id: int
     run_id: Optional[int] = None
 
 
@@ -51,7 +51,7 @@ class TestUpdate(BaseModel):
 class Answer(BaseModel):
     question_id: int
     answer_mode: Optional[Literal["llm", "random", "user"]] = None
-    answer: Optional[str] = None
+    answer: Optional[str] | Optional[list] = None
 
 
 class TestSubmitPayload(BaseModel):
@@ -71,3 +71,22 @@ class TestRunResponse(BaseModel):
     run_content: AnsweredTestContent
     llm_model: Optional[str] = None
     submitted_date: datetime.datetime
+
+
+class SubmitTestResponse(BaseModel):
+    job_id: str
+    message: str
+
+
+class JobResult(BaseModel):
+    run_id: int
+    status: str
+    error: str | None = None
+
+
+class RunJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    processed_runs_count: int
+    total_runs: int
+    results: Optional[List[JobResult]] = None

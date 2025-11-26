@@ -1,6 +1,8 @@
 """This module contains api endpoints for the document connected logics"""
 
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers import tests as test_controllers
@@ -13,9 +15,13 @@ from app.schemas.test import (
     TestSubmitPayload,
     TestGetResponse,
     TestRunResponse,
+    SubmitTestResponse,
+    RunJobStatusResponse,
 )
 
 from app.services.users import get_user_from_token
+from app.settings import JOBS_STORAGE
+from app.utils.enums import JobStatus
 
 tests_router = APIRouter(tags=["Tests"])
 
@@ -71,21 +77,41 @@ async def update_test(
     return result
 
 
-@tests_router.post("/submit/{test_id}", status_code=200)
+@tests_router.post(
+    "/submit/{test_id}", response_model=SubmitTestResponse, status_code=202
+)
 async def submit_test(
     test_id: int,
     payload: TestSubmitPayload,
+    background_tasks: BackgroundTasks,  # TODO -> May add Celery for background tasks
     current_user: User = Depends(get_user_from_token),
-):
-    results = await test_controllers.run_test_batch(
+) -> SubmitTestResponse:
+    job_id = str(uuid.uuid4())
+
+    # Simple storage as a dict TODO -> Add Redis for storing
+    JOBS_STORAGE[job_id] = {
+        "status": JobStatus.PENDING,
+        "total_tests": payload.quantity,
+        "processed_tests": 0,
+        "results": [],
+    }
+
+    background_tasks.add_task(
+        test_controllers.run_test_batch,
+        job_id=job_id,
         test_id=test_id,
         payload=payload,
         current_user=current_user,
     )
-    success_count = sum(1 for r in results if not isinstance(r, Exception))
-    failure_count = len(results) - success_count
-    return {
-        "status": "done",
-        "success_count": success_count,
-        "failure_count": failure_count,
-    }
+
+    return SubmitTestResponse(
+        job_id=job_id, message=f"Task accepted. Poll /status/{job_id} for updates."
+    )
+
+
+@tests_router.get(
+    "/submit-status/{job_id}", response_model=RunJobStatusResponse, status_code=200
+)
+async def get_job_status(job_id: str) -> RunJobStatusResponse:
+    result = await test_controllers.get_run_status(job_id)
+    return result

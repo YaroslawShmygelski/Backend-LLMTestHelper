@@ -8,8 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 LOGGING_LEVEL: str = "DEBUG"
-MAX_PARALLEL_TASKS = 7
+MAX_PARALLEL_TASKS = 9
 ENV: str = os.getenv("ENV", "prod")
+
+JOBS_STORAGE = {}
 
 
 class PostgresDBSettings(BaseSettings):
