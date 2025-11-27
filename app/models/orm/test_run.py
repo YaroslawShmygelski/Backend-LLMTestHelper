@@ -28,3 +28,4 @@ class TestRun(DeclarativeBase, MixinModel):
     submitted_date: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+    job_id: Mapped[str] = mapped_column(nullable=False)

@@ -1,7 +1,5 @@
 """This module contains api endpoints for the document connected logics"""
 
-import uuid
-
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,8 +18,6 @@ from app.schemas.test import (
 )
 
 from app.services.users import get_user_from_token
-from app.settings import JOBS_STORAGE
-from app.utils.enums import JobStatus
 
 tests_router = APIRouter(tags=["Tests"])
 
@@ -72,7 +68,10 @@ async def update_test(
     async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.update_test(
-        test_id, update_data, current_user, async_db_session
+        test_id=test_id,
+        update_data=update_data,
+        current_user=current_user,
+        db_session=async_db_session,
     )
     return result
 
@@ -83,30 +82,16 @@ async def update_test(
 async def submit_test(
     test_id: int,
     payload: TestSubmitPayload,
-    background_tasks: BackgroundTasks,  # TODO -> May add Celery for background tasks
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_user_from_token),
 ) -> SubmitTestResponse:
-    job_id = str(uuid.uuid4())
-
-    # Simple storage as a dict TODO -> Add Redis for storing
-    JOBS_STORAGE[job_id] = {
-        "status": JobStatus.PENDING,
-        "total_tests": payload.quantity,
-        "processed_tests": 0,
-        "results": [],
-    }
-
-    background_tasks.add_task(
-        test_controllers.run_test_batch,
-        job_id=job_id,
+    result = await test_controllers.start_test_batch(
         test_id=test_id,
         payload=payload,
         current_user=current_user,
+        background_tasks=background_tasks,
     )
-
-    return SubmitTestResponse(
-        job_id=job_id, message=f"Task accepted. Poll /status/{job_id} for updates."
-    )
+    return result
 
 
 @tests_router.get(

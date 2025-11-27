@@ -14,7 +14,14 @@ from fastapi import Request
 from app.settings import LOGGING_LEVEL, ENV
 
 correlation_id = contextvars.ContextVar("correlation_id", default=None)
-SENSITIVE_KEYS = {"password", "secret", "authorization", "jwt", "access_token", "refresh_token"}
+SENSITIVE_KEYS = {
+    "password",
+    "secret",
+    "authorization",
+    "jwt",
+    "access_token",
+    "refresh_token",
+}
 
 
 class CustomJsonFormatter(python_jsonlogger.JsonFormatter):
@@ -82,6 +89,7 @@ def setup_logging():
     logging.getLogger("python_multipart.multipart").setLevel(logging.ERROR)
     logging.getLogger("passlib.handlers.argon2").setLevel(logging.ERROR)
 
+
 def sanitize(obj):
     if isinstance(obj, dict):
         cleaned = {}
@@ -109,16 +117,17 @@ def sanitize_result(func):
 
     return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
 
+
 @sanitize_result
 async def log_headers(request: Request) -> dict:
     headers_dict = dict(request.headers)
 
     client_ip = request.client.host if request.client else None
     real_ip = (
-            headers_dict.get("x-forwarded-for")
-            or headers_dict.get("x-real-ip")
-            or headers_dict.get("cf-connecting-ip")
-            or client_ip
+        headers_dict.get("x-forwarded-for")
+        or headers_dict.get("x-real-ip")
+        or headers_dict.get("cf-connecting-ip")
+        or client_ip
     )
 
     useful_headers = {
@@ -132,6 +141,7 @@ async def log_headers(request: Request) -> dict:
     }
 
     return useful_headers
+
 
 @sanitize_result
 async def log_request_body(request: Request) -> Tuple[dict, bytes]:
@@ -152,17 +162,18 @@ async def log_request_body(request: Request) -> Tuple[dict, bytes]:
 
     return parsed_payload, raw_body
 
+
 @sanitize_result
 async def log_response_body(response_body_chunks: list[bytes]) -> str | dict:
     raw_body = b"".join(response_body_chunks)
 
     try:
         text = raw_body.decode("utf-8")
-    except:
+    except Exception:
         text = "<binary response body>"
     try:
         response_body = json.loads(text)
-    except:
+    except Exception:
         response_body = text
 
     return response_body

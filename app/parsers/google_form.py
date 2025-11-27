@@ -53,12 +53,18 @@ def fetch_form_data(url: str) -> list | None:
     try:
         response = requests.get(url, timeout=10)
     except requests.RequestException as e:
-        logger.error(f"Failed to fetch form: {e}")
+        logger.error(
+            "Failed to fetch form: %s",
+            str(e),
+        )
 
         return None
 
     if response.status_code != 200:
-        logger.error(f"HTTP {response.status_code}: Cannot fetch form data.")
+        logger.error(
+            "HTTP %s: Cannot fetch form data.",
+            response.status_code,
+        )
 
         return None
 
@@ -175,7 +181,7 @@ def fill_form_entries(entries, fill_algorithm):
 
 
 # ------ OUTPUT ------ #
-def parse_form_entries(url: str, only_required: bool = False) -> list[dict]:
+def parse_google_form(url: str, only_required: bool = False) -> list[dict]:
     """
     Controller-level function that returns already parsed Google Form fields.
     Combines both fetching (HTML → JSON) and parsing (JSON → structured fields).
@@ -225,7 +231,7 @@ def get_form_submit_request(
     fill_algorithm=None,
 ):
     """Get form request body data"""
-    entries = parse_form_entries(url=url, only_required=only_required)
+    entries = parse_google_form(url=url, only_required=only_required)
 
     if fill_algorithm:
         entries = fill_form_entries(entries, fill_algorithm)
@@ -240,7 +246,7 @@ def get_form_submit_request(
         # save as file
         with open(output, "w", encoding="utf-8") as f:
             f.write(result)
-            logger.info(f"Form saved to {output}")
+            logger.info("Form saved to %s", output)
             f.close()
     return None
 

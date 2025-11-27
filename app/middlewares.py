@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 import uuid
@@ -6,7 +5,12 @@ import uuid
 from fastapi import Request, FastAPI
 from starlette.types import Scope, Receive, Send
 
-from app.utils.logging import correlation_id, log_headers, log_request_body, log_response_body
+from app.utils.logging import (
+    correlation_id,
+    log_headers,
+    log_request_body,
+    log_response_body,
+)
 
 logger = logging.getLogger(__name__)
 

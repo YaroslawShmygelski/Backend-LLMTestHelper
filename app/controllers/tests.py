@@ -1,42 +1,38 @@
-import asyncio
 import logging
-from asyncio import Semaphore, TaskGroup
-from datetime import datetime, timezone
+import uuid
 
-import aiohttp
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.postgres_config import async_postgres_session
 from app.models.orm.test_run import TestRun
 from app.models.orm.user import User
-from app.parsers.google_form import parse_form_entries, get_form_response_url
+from app.parsers.google_form import parse_google_form
 from app.schemas.test import (
     TestResponse,
     GoogleDocsRequest,
     TestContent,
     TestUpdate,
-    TestSubmitPayload,
     TestGetResponse,
     TestRunResponse,
-    RunJobStatusResponse, JobResult,
+    RunJobStatusResponse,
+    SubmitTestResponse,
 )
 from app.services.tests import (
-    normalize_test_data,
+    normalize_parsed_data,
     store_test_in_db,
     get_test_from_db,
-    answer_test_questions,
+    run_background_tests,
 )
-from app.settings import MAX_PARALLEL_TASKS, JOBS_STORAGE
+from app.settings import JOBS_STORAGE
 from app.utils.enums import JobStatus
-from app.utils.exception_types import ServerError, NotFoundError
+from app.utils.exception_types import NotFoundError
 from app.utils.logging import correlation_id
 
 logger = logging.getLogger(__name__)
 
 
 async def upload_google_doc_test(
-        payload: GoogleDocsRequest, current_user: User, async_db_session: AsyncSession
+    payload: GoogleDocsRequest, current_user: User, async_db_session: AsyncSession
 ) -> TestResponse:
     logger.info(
         "google_doc_import",
@@ -45,9 +41,9 @@ async def upload_google_doc_test(
             "test_url": payload.test_url,
         },
     )
-    parsed_data = parse_form_entries(url=payload.test_url, only_required=False)
+    parsed_data = parse_google_form(url=payload.test_url, only_required=False)
 
-    test_content: TestContent = normalize_test_data(parsed_data)
+    test_content: TestContent = normalize_parsed_data(parsed_data)
 
     test_db = await store_test_in_db(
         test_content=test_content,
@@ -69,7 +65,7 @@ async def upload_google_doc_test(
 
 
 async def get_test(
-        test_id: int, current_user: User, db_session: AsyncSession
+    test_id: int, current_user: User, db_session: AsyncSession
 ) -> TestGetResponse:
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
@@ -90,7 +86,7 @@ async def get_test(
 
 
 async def update_test(
-        test_id: int, update_data: TestUpdate, current_user: User, db_session: AsyncSession
+    test_id: int, update_data: TestUpdate, current_user: User, db_session: AsyncSession
 ) -> TestResponse:
     test_db = await get_test_from_db(
         test_id=test_id, current_user=current_user, async_db_session=db_session
@@ -122,113 +118,27 @@ async def update_test(
     return TestResponse(test_id=test_db.id)
 
 
-async def submit_single_test(
-        test_id: int,
-        payload: TestSubmitPayload,
-        current_user: User,
-) -> TestResponse:
-    async with async_postgres_session() as session:
-        test_db = await get_test_from_db(
-            test_id=test_id,
-            current_user=current_user,
-            async_db_session=session,
-        )
+async def start_test_batch(test_id, payload, current_user, background_tasks):
+    job_id = str(uuid.uuid4())
 
-        logger.info(
-            "Submitting test",
-            extra={"test_id": test_db.id, "user_id": current_user.id},
-        )
+    JOBS_STORAGE[job_id] = {
+        "status": JobStatus.PENDING,
+        "total_tests": payload.quantity,
+        "processed_tests": 0,
+        "results": [],
+    }
 
-        answered_test_content = await answer_test_questions(
-            test_content=test_db.content,
-            payload_answers=payload.answers,
-        )
+    background_tasks.add_task(
+        run_background_tests,
+        job_id=job_id,
+        test_id=test_id,
+        payload=payload,
+        current_user=current_user,
+    )
 
-        data = {}
-        for entry in answered_test_content.questions:
-            value = entry.user_answer or entry.llm_answer or entry.random_answer or None
-            data[f"entry.{entry.id}"] = value
-
-        if test_db.url:
-            formed_url = get_form_response_url(url=test_db.url)
-            async with aiohttp.ClientSession() as client:
-                async with client.post(formed_url, data=data, timeout=5) as resp:
-                    if resp.status != 200:
-                        logger.error(
-                            "Error submitting test to Google form",
-                            extra={
-                                "test_id": test_db.id,
-                                "user_id": current_user.id,
-                                "status_code": resp.status,
-                                "url": test_db.url,
-                            },
-                        )
-                        raise ServerError(
-                            message="Error submitting test to Google form"
-                        )
-
-        test_db.is_submitted = True
-
-        answered_test_db = TestRun(
-            test_id=test_db.id,
-            user_id=current_user.id,
-            run_content=answered_test_content,
-            submitted_date=datetime.now(timezone.utc),
-        )
-
-        session.add(answered_test_db)
-        await session.commit()
-        await session.refresh(answered_test_db)
-
-        logger.info(
-            "Test submitted successfully",
-            extra={
-                "test_id": test_db.id,
-                "run_id": answered_test_db.id,
-                "user_id": current_user.id,
-                "correlation_id": correlation_id.get(),
-            },
-        )
-
-        return TestResponse(test_id=test_db.id, run_id=answered_test_db.id)
-
-
-async def run_test_batch(
-        job_id: str,
-        test_id: int,
-        payload: TestSubmitPayload,
-        current_user: User,
-):
-    JOBS_STORAGE[job_id]["status"] = "processing"
-    sem = Semaphore(MAX_PARALLEL_TASKS)
-
-    async def worker():
-        async with sem:
-            try:
-                result = await submit_single_test(
-                    test_id=test_id,
-                    payload=payload,
-                    current_user=current_user
-                )
-                JOBS_STORAGE[job_id]["results"].append(
-                    JobResult(
-                        status=JobStatus.COMPLETED,
-                        run_id=result.run_id,
-                    )
-                )
-            except Exception as e:
-                JOBS_STORAGE[job_id]["results"].append({
-                    "status": JobStatus.FAILED,
-                    "error": str(e),
-                })
-            finally:
-                JOBS_STORAGE[job_id]["processed_tests"] += 1
-
-    async with TaskGroup() as tg:
-        for _ in range(payload.quantity):
-            tg.create_task(worker())
-
-    JOBS_STORAGE[job_id]["status"] = JobStatus.COMPLETED
+    return SubmitTestResponse(
+        job_id=job_id, message=f"Task accepted. Poll /status/{job_id} for updates."
+    )
 
 
 async def get_run_status(job_id: str):

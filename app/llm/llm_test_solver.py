@@ -33,7 +33,7 @@ class LLMTestSolverAgent:
         prompt = self.__create_prompt(state.questions)
         if state.error:
             prompt += f"\nPlease change you answers it solver error in previous call:{state.error}"
-        logger.info(f"Generating attempt with prompt", extra={"prompt": prompt})
+        logger.info("Generating attempt with %s", prompt, extra={"prompt": prompt})
         state.raw_answers = self.llm_model.invoke_llm(prompt)
         return state
 
@@ -47,7 +47,7 @@ class LLMTestSolverAgent:
         except ValidationError as e:
             state.increment_attempts()
             state.error = str(e)
-            if state.attempts >= LLMGeminiSettings.MAX_RETRIES:
+            if state.attempts >= LLMGeminiSettings.max_retries:
                 state.error = f"Reached Maximum retries with error {e}"
                 logger.error(
                     "LLM reached Maximum retries with error",

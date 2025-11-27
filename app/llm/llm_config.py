@@ -11,21 +11,21 @@ load_dotenv()
 
 @dataclass
 class LLMGeminiSettings:
-    MODEL: str = "gemini-2.5-flash"
-    LLM_TEMPERATURE: float = 0
-    LLM_TIMEOUT: int = 30
-    MAX_RETRIES: int = 3
-    MAX_AGENT_RETRIES: int = 3
+    model: str = "gemini-2.5-flash"
+    llm_temperature: float = 0
+    llm_timeout: int = 30
+    max_retries: int = 3
+    max_agent_retries: int = 3
 
 
 class LLMClient:
     def __init__(self):
 
         self.model = ChatGoogleGenerativeAI(
-            model=LLMGeminiSettings.MODEL,
-            temperature=LLMGeminiSettings.LLM_TEMPERATURE,
-            timeout=LLMGeminiSettings.LLM_TIMEOUT,
-            max_retries=LLMGeminiSettings.MAX_RETRIES,
+            model=LLMGeminiSettings.model,
+            temperature=LLMGeminiSettings.llm_temperature,
+            timeout=LLMGeminiSettings.llm_timeout,
+            max_retries=LLMGeminiSettings.max_retries,
         )
 
     def invoke_llm(self, prompt: str) -> str:
