@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.postgres_config import get_async_postgres_session
+from app.models.orm.test import Test
 from app.models.orm.user import User
+from app.schemas.users import UserTests
 from app.utils.exception_types import NotFoundError, UnauthorizedError
 from app.utils.jwt_tokens_handlers import decode_token
 
@@ -42,3 +44,16 @@ async def get_user_from_token(
         raise NotFoundError("User from token does not exist")
 
     return user
+
+
+async def get_user_tests_db(
+    current_user: User,
+    db_session: Annotated[AsyncSession, Depends(get_async_postgres_session)],
+    offset: int = 0,
+    limit: int = 20,
+) -> list[Test]:
+    result = await db_session.execute(
+        select(Test).where(Test.user_id == current_user.id).offset(offset).limit(limit)
+    )
+    tests = list(result.scalars().all())
+    return tests

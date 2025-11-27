@@ -6,8 +6,14 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.orm.user import User
-from app.schemas.users import UserCreate, UserResult, UserBase
-from app.services.users import get_password_hash, get_user_from_token
+from app.schemas.users import (
+    UserCreate,
+    UserResult,
+    UserBase,
+    UserTests,
+    UserTestsResponse,
+)
+from app.services.users import get_password_hash, get_user_from_token, get_user_tests_db
 from app.utils.exception_types import ConflictError
 from app.utils.logging import correlation_id
 
@@ -76,3 +82,26 @@ async def get_current_user_from_db(
     current_user: User = Depends(get_user_from_token),
 ) -> UserBase:
     return UserBase.model_validate(current_user)
+
+
+async def get_user_tests(
+    current_user: User, async_db_session: AsyncSession, offset: int, limit: int
+) -> UserTestsResponse:
+    tests_db = await get_user_tests_db(
+        current_user=current_user,
+        db_session=async_db_session,
+        offset=offset,
+        limit=limit,
+    )
+    result = [
+        UserTests(
+            test_id=test.id,
+            type=test.type,
+            title=test.title,
+            url=test.url,
+            created_at=test.created_at,
+            updated_at=test.updated_at,
+        )
+        for test in tests_db
+    ]
+    return UserTestsResponse(offset=offset, limit=limit, tests=result)

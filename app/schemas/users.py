@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, constr, EmailStr
 
@@ -33,3 +34,18 @@ class UserUpdate(BaseModel):
 class UserResult(BaseModel):
     id: int
     model_config = {"from_attributes": True}
+
+
+class UserTests(BaseModel):
+    test_id: int
+    type: str
+    title: str
+    url: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserTestsResponse(BaseModel):
+    offset: int
+    limit: int
+    tests: list[UserTests]
