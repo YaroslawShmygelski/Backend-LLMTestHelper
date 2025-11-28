@@ -348,3 +348,15 @@ async def run_background_tests(
             tg.create_task(worker())
 
     JOBS_STORAGE[job_id]["status"] = JobStatus.COMPLETED
+
+
+async def get_runs_of_test_db(
+    test_id: int, current_user: User, db_session: AsyncSession
+) -> list[TestRun]:
+    result = await db_session.execute(
+        Select(TestRun).where(
+            TestRun.test_id == test_id, TestRun.user_id == current_user.id
+        )
+    )
+    test_runs = list(result.scalars().all())
+    return test_runs

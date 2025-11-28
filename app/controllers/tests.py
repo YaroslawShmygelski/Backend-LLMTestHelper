@@ -16,12 +16,15 @@ from app.schemas.test import (
     TestRunResponse,
     RunJobStatusResponse,
     SubmitTestResponse,
+    RunsOfTest,
+    RunsOfTestResponse,
 )
 from app.services.tests import (
     normalize_parsed_data,
     store_test_in_db,
     get_test_from_db,
     run_background_tests,
+    get_runs_of_test_db,
 )
 from app.settings import JOBS_STORAGE
 from app.utils.enums import JobStatus
@@ -183,3 +186,24 @@ async def get_test_run(run_id: int, current_user: User, db_session: AsyncSession
         run_content=test_run_db.run_content,
         submitted_date=test_run_db.submitted_date,
     )
+
+
+async def get_runs_of_test(
+    test_id: int, current_user: User, async_db_session: AsyncSession
+) -> RunsOfTestResponse:
+    test_runs_db = await get_runs_of_test_db(
+        test_id=test_id, current_user=current_user, db_session=async_db_session
+    )
+    result = [
+        RunsOfTest(
+            run_id=test_run.id,
+            test_id=test_run.test_id,
+            user_id=test_run.user_id,
+            job_id=test_run.job_id,
+            submitted_date=test_run.submitted_date,
+            llm_model=test_run.llm_model,
+        )
+        for test_run in test_runs_db
+    ]
+
+    return RunsOfTestResponse(test_runs=result)

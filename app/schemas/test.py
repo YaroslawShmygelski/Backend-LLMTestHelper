@@ -90,3 +90,16 @@ class RunJobStatusResponse(BaseModel):
     processed_runs_count: int
     total_runs: int
     results: Optional[List[JobResult]] = None
+
+
+class RunsOfTest(BaseModel):
+    run_id: int
+    test_id: int
+    user_id: int
+    job_id: str
+    submitted_date: datetime.datetime
+    llm_model: Optional[str] = None
+
+
+class RunsOfTestResponse(BaseModel):
+    test_runs: list[RunsOfTest]
