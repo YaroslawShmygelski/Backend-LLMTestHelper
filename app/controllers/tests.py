@@ -4,8 +4,8 @@ import uuid
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.orm.test_run import TestRun
-from app.models.orm.user import User
+from app.database.models.orm.test_run import TestRun
+from app.database.models.orm.user import User
 from app.parsers.google_form import parse_google_form
 from app.schemas.test import (
     TestResponse,

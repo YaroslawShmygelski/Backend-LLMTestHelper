@@ -9,7 +9,7 @@ from fastapi import Request, Response
 from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.orm.refresh_token import RefreshToken
+from app.database.models.orm.refresh_token import RefreshToken
 from app.utils.exception_types import UnauthorizedError
 
 load_dotenv()

@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import DateTime
 from sqlalchemy.orm import mapped_column, Mapped
 from app.database.postgres_config import DeclarativeBase
-from app.models.orm.mixin import MixinModel
+from app.database.models.orm.mixin import MixinModel
 
 
 # pylint: disable=too-few-public-methods

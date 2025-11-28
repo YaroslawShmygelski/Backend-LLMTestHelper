@@ -5,10 +5,6 @@ from sqlalchemy import create_engine, pool
 from alembic import context
 
 from app.database.postgres_config import DeclarativeBase
-from app.models.orm.user import User
-from app.models.orm.refresh_token import RefreshToken
-from app.models.orm.test import Test
-from app.models.orm.test_run import TestRun
 from dotenv import load_dotenv
 
 load_dotenv()

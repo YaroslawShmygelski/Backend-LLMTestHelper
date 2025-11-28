@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.orm.user import User
+from app.database.models.orm.user import User
 from app.schemas.users import (
     UserCreate,
     UserResult,

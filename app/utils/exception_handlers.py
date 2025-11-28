@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 async def expected_exception_handler(
+    request: Request,
     exc: BasicAppError,
 ) -> JSONResponse:
     cid = correlation_id.get()

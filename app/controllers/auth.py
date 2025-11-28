@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.orm.user import User
+from app.database.models.orm.user import User
 from app.schemas.token_response import TokenResponse
 from app.utils.exception_types import NotFoundError, ForbiddenError, UnauthorizedError
 from app.utils.jwt_tokens_handlers import (

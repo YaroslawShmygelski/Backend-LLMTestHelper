@@ -8,9 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.postgres_config import get_async_postgres_session
-from app.models.orm.test import Test
-from app.models.orm.user import User
-from app.schemas.users import UserTests
+from app.database.models.orm.test import Test
+from app.database.models.orm.user import User
 from app.utils.exception_types import NotFoundError, UnauthorizedError
 from app.utils.jwt_tokens_handlers import decode_token
 

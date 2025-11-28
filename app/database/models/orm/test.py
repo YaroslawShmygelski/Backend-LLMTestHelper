@@ -3,7 +3,7 @@ from sqlalchemy import ForeignKey, TypeDecorator, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.postgres_config import DeclarativeBase
-from app.models.orm.mixin import MixinModel
+from app.database.models.orm.mixin import MixinModel
 from app.schemas.test import TestContent
 
 

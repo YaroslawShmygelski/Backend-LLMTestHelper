@@ -9,11 +9,11 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.postgres_config import async_postgres_session
-from app.llm.llm_config import LLMClient, LLMSolverState
-from app.llm.llm_test_solver import LLMTestSolverAgent
-from app.models.orm.test import Test
-from app.models.orm.test_run import TestRun
-from app.models.orm.user import User
+from app.services.llm.llm_config import LLMClient, LLMSolverState
+from app.services.llm.llm_test_solver import LLMTestSolverAgent
+from app.database.models.orm.test import Test
+from app.database.models.orm.test_run import TestRun
+from app.database.models.orm.user import User
 from app.parsers.google_form import get_form_response_url
 from app.schemas.llm import LLMQuestionIn, LLMQuestionsListIn
 from app.schemas.test import (

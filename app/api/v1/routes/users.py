@@ -8,12 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers import users as user_controllers
 from app.database.postgres_config import get_async_postgres_session
-from app.models.orm.user import User
+from app.database.models.orm.user import User
 from app.schemas.users import (
     UserCreate,
     UserResult,
     UserBase,
-    UserTests,
     UserTestsResponse,
 )
 from app.services.users import get_user_from_token

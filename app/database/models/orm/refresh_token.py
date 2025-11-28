@@ -4,7 +4,7 @@ from sqlalchemy import ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.postgres_config import DeclarativeBase
-from app.models.orm.mixin import MixinModel
+from app.database.models.orm.mixin import MixinModel
 
 
 # pylint: disable=too-few-public-methods

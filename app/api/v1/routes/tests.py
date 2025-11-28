@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers import tests as test_controllers
 from app.database.postgres_config import get_async_postgres_session
-from app.models.orm.user import User
+from app.database.models.orm.user import User
 from app.schemas.test import (
     TestResponse,
     GoogleDocsRequest,

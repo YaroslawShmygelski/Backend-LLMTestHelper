@@ -5,7 +5,7 @@ import logging
 from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import TypeAdapter, ValidationError
-from app.llm.llm_config import (
+from app.services.llm.llm_config import (
     LLMClient,
     LLMSolverState,
     build_test_solver_prompt,
