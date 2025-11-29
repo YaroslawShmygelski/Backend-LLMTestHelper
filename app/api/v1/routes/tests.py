@@ -1,6 +1,6 @@
 """This module contains api endpoints for the document connected logics"""
 
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, UploadFile, Form, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers import tests as test_controllers
@@ -115,11 +115,18 @@ async def get_runs_of_test(
     return result
 
 
-# @tests_router.post("/document/upload")
-# async def upload_document(
-#         background_tasks: BackgroundTasks,
-#         payload: UploadDocumentRequest,
-#         current_user: User = Depends(get_user_from_token),
-#         async_db_session: AsyncSession = Depends(get_async_postgres_session),
-# ):
-#     ...
+@tests_router.post("/document/upload")
+async def upload_document(
+        background_tasks: BackgroundTasks,
+        document: UploadFile = File(...),
+        test_id: int = Form(...),
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
+):
+    result = await test_controllers.upload_document(
+        background_tasks=background_tasks,
+        document=document,
+        test_id=test_id,
+        async_db_session=async_db_session,
+    )
+    return result

@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from pydantic import BaseModel
-
 from app.schemas.llm import LLMQuestionsListOut, LLMQuestionsListIn
 
 load_dotenv()
@@ -16,6 +15,7 @@ class LLMGeminiSettings:
     llm_timeout: int = 30
     max_retries: int = 3
     max_agent_retries: int = 3
+    embeddings_model: str = "gemini-embedding-001"
 
 
 class LLMClient:
@@ -66,3 +66,7 @@ LLM_SOLVER_RESPONSE_RULES = """
 - if there is option where you have to select multiple answers you should send "answer": ["option1", "option2"]]
 - If not, generate a concise answer
 - ALLWAYS Do NOT add any explanations, Markdowns, //, or Python code"""
+
+embeddings_model = GoogleGenerativeAIEmbeddings(
+    model=LLMGeminiSettings.embeddings_model
+)

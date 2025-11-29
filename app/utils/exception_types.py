@@ -13,10 +13,12 @@ class BasicAppError(Exception):
 
         super().__init__(self.message)
 
+
 class WrongRequestError(BasicAppError):
     status_code = 400
     error_code = "WRONG_REQUEST"
     message = "Wrong Request"
+
 
 class NotFoundError(BasicAppError):
     status_code = 404

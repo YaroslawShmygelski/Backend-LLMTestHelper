@@ -5,6 +5,7 @@ from app.database.models.orm.mixin import MixinModel
 from app.database.postgres_config import DeclarativeBase
 from app.database.models.orm.document_embedding import DocumentEmbedding
 
+
 class Document(DeclarativeBase, MixinModel):
     __tablename__ = "documents"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -16,7 +17,9 @@ class Document(DeclarativeBase, MixinModel):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
-    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id", ondelete="CASCADE"), index=True)
+    test_id: Mapped[int] = mapped_column(
+        ForeignKey("tests.id", ondelete="CASCADE"), index=True
+    )
 
     embeddings: Mapped[list["DocumentEmbedding"]] = relationship(
         "DocumentEmbedding",
