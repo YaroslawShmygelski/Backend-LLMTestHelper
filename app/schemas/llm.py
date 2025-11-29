@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from app.schemas.test import QuestionType
+from app.schemas.tests.test import QuestionType
 
 
 class LLMQuestionIn(BaseModel):

@@ -16,7 +16,7 @@ from app.database.models.orm.test_run import TestRun
 from app.database.models.orm.user import User
 from app.parsers.google_form import get_form_response_url
 from app.schemas.llm import LLMQuestionIn, LLMQuestionsListIn
-from app.schemas.test import (
+from app.schemas.tests.test import (
     TestContent,
     QuestionStructure,
     QuestionType,
@@ -27,7 +27,7 @@ from app.schemas.test import (
     TestResponse,
     JobResult,
 )
-from app.settings import JOBS_STORAGE, MAX_PARALLEL_TASKS
+from app.settings import TEST_RUNS_JOBS_STORAGE, MAX_PARALLEL_TASKS
 from app.utils.configs import get_form_type_description
 from app.utils.enums import JobStatus
 from app.utils.exception_types import ServerError
@@ -37,19 +37,25 @@ logger = logging.getLogger(__name__)
 
 def normalize_parsed_data(parsed_data: list[dict]) -> TestContent:
     normalized_questions: list[QuestionStructure] = []
+
+    logger.info(parsed_data)
+
     for question in parsed_data:
-        question_type_description_dict: QuestionType = get_form_type_description(
-            question["type"]
-        )
-        normalized_questions.append(
-            QuestionStructure(
-                id=question["id"],
-                question=question["container_name"],
-                required=question["required"],
-                type=question_type_description_dict,
-                options=question["options"],
+        if isinstance(question.get("type"), int):
+            question_type_description_dict: QuestionType = get_form_type_description(
+                question["type"]
             )
-        )
+            normalized_questions.append(
+                QuestionStructure(
+                    id=question["id"],
+                    question=question.get("container_name") or question.get("name"),
+                    required=question.get("required", False),
+                    type=question_type_description_dict,
+                    options=question.get("options"),
+                )
+            )
+        else:
+            logger.info(f"Skipping non-question field: {question['id']}")
 
     test_content = TestContent(questions=normalized_questions)
     return test_content
@@ -297,7 +303,7 @@ async def run_background_tests(
     payload: TestSubmitPayload,
     current_user: User,
 ):
-    JOBS_STORAGE[job_id]["status"] = "processing"
+    TEST_RUNS_JOBS_STORAGE[job_id]["status"] = "processing"
     sem = Semaphore(MAX_PARALLEL_TASKS)
 
     async def worker():
@@ -309,7 +315,7 @@ async def run_background_tests(
                     payload=payload,
                     current_user=current_user,
                 )
-                JOBS_STORAGE[job_id]["results"].append(
+                TEST_RUNS_JOBS_STORAGE[job_id]["results"].append(
                     JobResult(
                         status=JobStatus.COMPLETED,
                         run_id=result.run_id,
@@ -325,7 +331,7 @@ async def run_background_tests(
                     },
                 )
             except Exception as e:
-                JOBS_STORAGE[job_id]["results"].append(
+                TEST_RUNS_JOBS_STORAGE[job_id]["results"].append(
                     {
                         "status": JobStatus.FAILED,
                     }
@@ -336,18 +342,18 @@ async def run_background_tests(
                         "test_id": test_id,
                         "user_id": current_user.id,
                         "job_id": job_id,
-                        "attempt": JOBS_STORAGE[job_id]["processed_tests"],
+                        "attempt": TEST_RUNS_JOBS_STORAGE[job_id]["processed_tests"],
                         "error": str(e),
                     },
                 )
             finally:
-                JOBS_STORAGE[job_id]["processed_tests"] += 1
+                TEST_RUNS_JOBS_STORAGE[job_id]["processed_tests"] += 1
 
     async with TaskGroup() as tg:
         for _ in range(payload.quantity):
             tg.create_task(worker())
 
-    JOBS_STORAGE[job_id]["status"] = JobStatus.COMPLETED
+    TEST_RUNS_JOBS_STORAGE[job_id]["status"] = JobStatus.COMPLETED
 
 
 async def get_runs_of_test_db(

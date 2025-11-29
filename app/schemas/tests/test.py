@@ -11,7 +11,7 @@ class QuestionType(BaseModel):
 
 class QuestionStructure(BaseModel):
     id: int
-    question: str
+    question: str | None
     type: QuestionType
     required: bool
     options: Optional[List[str]] = None

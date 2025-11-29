@@ -1,4 +1,4 @@
-from app.schemas.test import QuestionType
+from app.schemas.tests.test import QuestionType
 
 
 def get_form_type_description(type_id: int) -> QuestionType:

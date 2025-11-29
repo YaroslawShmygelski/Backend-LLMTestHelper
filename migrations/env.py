@@ -7,6 +7,13 @@ from alembic import context
 from app.database.postgres_config import DeclarativeBase
 from dotenv import load_dotenv
 
+from app.database.models.orm.test_run import TestRun
+from app.database.models.orm.user import User
+from app.database.models.orm.test import Test
+from app.database.models.orm.refresh_token import RefreshToken
+from app.database.models.orm.document import Document
+from app.database.models.orm.document_embedding import DocumentEmbedding
+
 load_dotenv()
 # Alembic Config object
 config = context.config

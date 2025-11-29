@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.controllers import tests as test_controllers
 from app.database.postgres_config import get_async_postgres_session
 from app.database.models.orm.user import User
-from app.schemas.test import (
+from app.schemas.tests.document import UploadDocumentRequest
+from app.schemas.tests.test import (
     TestResponse,
     GoogleDocsRequest,
     TestUpdate,
@@ -24,9 +25,9 @@ tests_router = APIRouter(tags=["Tests"])
 
 @tests_router.post("/google-docs", response_model=TestResponse, status_code=201)
 async def add_test_google_docs(
-    payload: GoogleDocsRequest,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        payload: GoogleDocsRequest,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.upload_google_doc_test(
         payload, current_user, async_db_session
@@ -36,9 +37,9 @@ async def add_test_google_docs(
 
 @tests_router.get("/{test_id}", response_model=TestGetResponse, status_code=200)
 async def get_test(
-    test_id: int,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        test_id: int,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ) -> TestGetResponse:
     result = await test_controllers.get_test(
         test_id=test_id, current_user=current_user, db_session=async_db_session
@@ -50,9 +51,9 @@ async def get_test(
     "/test-runs/{run_id}", response_model=TestRunResponse, status_code=200
 )
 async def get_test_run(
-    run_id: int,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        run_id: int,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.get_test_run(
         run_id=run_id, current_user=current_user, db_session=async_db_session
@@ -62,10 +63,10 @@ async def get_test_run(
 
 @tests_router.patch("/{test_id}", response_model=TestResponse, status_code=200)
 async def update_test(
-    test_id: int,
-    update_data: TestUpdate,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        test_id: int,
+        update_data: TestUpdate,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.update_test(
         test_id=test_id,
@@ -80,10 +81,10 @@ async def update_test(
     "/submit/{test_id}", response_model=SubmitTestResponse, status_code=202
 )
 async def submit_test(
-    test_id: int,
-    payload: TestSubmitPayload,
-    background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_user_from_token),
+        test_id: int,
+        payload: TestSubmitPayload,
+        background_tasks: BackgroundTasks,
+        current_user: User = Depends(get_user_from_token),
 ) -> SubmitTestResponse:
     result = await test_controllers.start_test_batch(
         test_id=test_id,
@@ -104,11 +105,21 @@ async def get_job_status(job_id: str) -> RunJobStatusResponse:
 
 @tests_router.get("/{test_id}/test-runs", status_code=200)
 async def get_runs_of_test(
-    test_id: int,
-    current_user: User = Depends(get_user_from_token),
-    async_db_session: AsyncSession = Depends(get_async_postgres_session),
+        test_id: int,
+        current_user: User = Depends(get_user_from_token),
+        async_db_session: AsyncSession = Depends(get_async_postgres_session),
 ):
     result = await test_controllers.get_runs_of_test(
         test_id=test_id, current_user=current_user, async_db_session=async_db_session
     )
     return result
+
+
+# @tests_router.post("/document/upload")
+# async def upload_document(
+#         background_tasks: BackgroundTasks,
+#         payload: UploadDocumentRequest,
+#         current_user: User = Depends(get_user_from_token),
+#         async_db_session: AsyncSession = Depends(get_async_postgres_session),
+# ):
+#     ...

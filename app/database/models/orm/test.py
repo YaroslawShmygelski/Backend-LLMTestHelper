@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.postgres_config import DeclarativeBase
 from app.database.models.orm.mixin import MixinModel
-from app.schemas.test import TestContent
+from app.schemas.tests.test import TestContent
 
 
 # pylint: disable=too-few-public-methods
