@@ -215,6 +215,7 @@ async def get_runs_of_test(
 async def upload_document(
     document: UploadFile,
     test_id: int,
+    user_id: int,
     background_tasks: BackgroundTasks,
     async_db_session: AsyncSession,
 ):
@@ -231,6 +232,7 @@ async def upload_document(
     background_tasks.add_task(
         process_document_job,
         job_id=job_id,
+        user_id=user_id,
         test_id=test_id,
         document=document,
         db_session=async_db_session,

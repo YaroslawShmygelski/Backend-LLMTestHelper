@@ -3,6 +3,7 @@ import logging
 
 import pdfplumber
 from fastapi import UploadFile
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models.orm.document import Document
@@ -11,6 +12,7 @@ from app.services.llm.embeddings import (
     get_document_chunks,
     generate_embeddings_for_chunks,
 )
+from app.services.llm.llm_config import embeddings_model
 from app.settings import (
     ALLOWED_DOCUMENT_TYPES,
     MAX_DOCUMENT_SIZE,
@@ -32,7 +34,8 @@ async def check_request_document(document: UploadFile) -> bytes:
     if len(document_content) > MAX_DOCUMENT_SIZE:
         raise WrongRequestError(message="File too large. Max 5 MB allowed.")
 
-    logger.info(f"Document content length: {len(document_content)}")
+    logger.info("Saving Document:", extra={"document": document})
+
     return document_content
 
 
@@ -48,11 +51,12 @@ async def extract_text_from_document(document_content: bytes, content_type: str)
         text = document_content.decode("utf-8")
     return text.strip()
 
+
 async def save_document_embeddings(
-    db_session: AsyncSession,
-    document_id: int,
-    chunks: list[str],
-    embeddings: list[list[float]],
+        db_session: AsyncSession,
+        document_id: int,
+        chunks: list[str],
+        embeddings: list[list[float]],
 ):
     db_embeddings = [
         DocumentEmbedding(
@@ -63,16 +67,18 @@ async def save_document_embeddings(
         )
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
     ]
+    logger.info("Saving document embeddings", extra={"embeddings": len(db_embeddings)})
     db_session.add_all(db_embeddings)
     await db_session.commit()
 
 
 async def process_document_job(
-    job_id: str,
-    test_id: int,
-    document: UploadFile,
-    scope: str,
-    db_session: AsyncSession,
+        job_id: str,
+        test_id: int,
+        user_id: int,
+        document: UploadFile,
+        scope: str,
+        db_session: AsyncSession,
 ):
     UPLOAD_DOCUMENT_JOBS_STORAGE[job_id]["status"] = JobStatus.PROCESSING
 
@@ -87,6 +93,7 @@ async def process_document_job(
         document_db = Document(
             file_name=document.filename,
             original_file_name=document.filename,
+            user_id=user_id,
             file_type=document.content_type,
             size_bytes=len(document_content),
             test_id=test_id,
@@ -100,6 +107,24 @@ async def process_document_job(
         return document_db.id, len(chunks)
 
     except Exception as e:
+        logger.exception("Document processing failed")
         UPLOAD_DOCUMENT_JOBS_STORAGE[job_id]["status"] = JobStatus.FAILED
         UPLOAD_DOCUMENT_JOBS_STORAGE[job_id]["error"] = str(e)
-        raise WrongRequestError(message="Error while uploading your document")
+        return None
+
+
+async def retrieve_context_from_db(db_session, question_text: str, test_id: int, top_k: int = 5):
+    query_embedding = embeddings_model.embed_query(question_text)
+
+    query = (
+        select(DocumentEmbedding)
+        .join(Document, Document.id == DocumentEmbedding.document_id)
+        .where(Document.test_id == test_id)
+        .order_by(DocumentEmbedding.embedding.l2_distance(query_embedding))
+        .limit(top_k)
+    )
+
+    results = await db_session.execute(query)
+    chunks = results.scalars().all()
+
+    return [c.chunk_text for c in chunks]

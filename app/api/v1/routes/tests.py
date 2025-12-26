@@ -127,6 +127,7 @@ async def upload_document(
         background_tasks=background_tasks,
         document=document,
         test_id=test_id,
+        user_id=current_user.id,
         async_db_session=async_db_session,
     )
     return result
