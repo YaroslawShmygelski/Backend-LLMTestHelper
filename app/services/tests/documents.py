@@ -10,7 +10,7 @@ from app.database.models.orm.document import Document
 from app.database.models.orm.document_embedding import DocumentEmbedding
 from app.services.llm.embeddings import (
     get_document_chunks,
-    generate_embeddings_for_chunks,
+    generate_embeddings,
 )
 from app.services.llm.llm_config import embeddings_model
 from app.settings import (
@@ -53,10 +53,10 @@ async def extract_text_from_document(document_content: bytes, content_type: str)
 
 
 async def save_document_embeddings(
-        db_session: AsyncSession,
-        document_id: int,
-        chunks: list[str],
-        embeddings: list[list[float]],
+    db_session: AsyncSession,
+    document_id: int,
+    chunks: list[str],
+    embeddings: list[list[float]],
 ):
     db_embeddings = [
         DocumentEmbedding(
@@ -73,12 +73,12 @@ async def save_document_embeddings(
 
 
 async def process_document_job(
-        job_id: str,
-        test_id: int,
-        user_id: int,
-        document: UploadFile,
-        scope: str,
-        db_session: AsyncSession,
+    job_id: str,
+    test_id: int,
+    user_id: int,
+    document: UploadFile,
+    scope: str,
+    db_session: AsyncSession,
 ):
     UPLOAD_DOCUMENT_JOBS_STORAGE[job_id]["status"] = JobStatus.PROCESSING
 
@@ -88,7 +88,7 @@ async def process_document_job(
         chunks = await get_document_chunks(
             text=text, storage=UPLOAD_DOCUMENT_JOBS_STORAGE, job_id=job_id
         )
-        embeddings = await generate_embeddings_for_chunks(chunks)
+        embeddings = await generate_embeddings(chunks)
 
         document_db = Document(
             file_name=document.filename,
@@ -111,20 +111,3 @@ async def process_document_job(
         UPLOAD_DOCUMENT_JOBS_STORAGE[job_id]["status"] = JobStatus.FAILED
         UPLOAD_DOCUMENT_JOBS_STORAGE[job_id]["error"] = str(e)
         return None
-
-
-async def retrieve_context_from_db(db_session, question_text: str, test_id: int, top_k: int = 5):
-    query_embedding = embeddings_model.embed_query(question_text)
-
-    query = (
-        select(DocumentEmbedding)
-        .join(Document, Document.id == DocumentEmbedding.document_id)
-        .where(Document.test_id == test_id)
-        .order_by(DocumentEmbedding.embedding.l2_distance(query_embedding))
-        .limit(top_k)
-    )
-
-    results = await db_session.execute(query)
-    chunks = results.scalars().all()
-
-    return [c.chunk_text for c in chunks]

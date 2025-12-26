@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.postgres_config import DeclarativeBase
 from app.database.models.orm.mixin import MixinModel
-from app.schemas.tests.test import TestContent
+from app.schemas.tests.test import TestQuestions
 
 
 # pylint: disable=too-few-public-methods
@@ -38,7 +38,7 @@ class Test(DeclarativeBase, MixinModel):
     )
     url: Mapped[str] = mapped_column(nullable=True)
     title: Mapped[str] = mapped_column(nullable=False)
-    content: Mapped[TestContent] = mapped_column(
-        PydanticJSON(TestContent), nullable=False
+    content: Mapped[TestQuestions] = mapped_column(
+        PydanticJSON(TestQuestions), nullable=False
     )
     is_submitted: Mapped[bool] = mapped_column(nullable=False, default=False)

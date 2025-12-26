@@ -12,7 +12,7 @@ from app.schemas.tests.document import UploadDocumentRequest
 from app.schemas.tests.test import (
     TestResponse,
     GoogleDocsRequest,
-    TestContent,
+    TestQuestions,
     TestUpdate,
     TestGetResponse,
     TestRunResponse,
@@ -49,7 +49,7 @@ async def upload_google_doc_test(
     )
     parsed_data = parse_google_form(url=payload.test_url, only_required=False)
     logger.info("Test is parsed:", extra={"parsed_data": parsed_data})
-    test_content: TestContent = normalize_parsed_data(parsed_data)
+    test_content: TestQuestions = normalize_parsed_data(parsed_data)
 
     test_db = await store_test_in_db(
         test_content=test_content,

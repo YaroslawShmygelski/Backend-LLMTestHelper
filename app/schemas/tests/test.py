@@ -24,7 +24,7 @@ class AnsweredQuestionStructure(QuestionStructure):
     random_answer: Optional[str] | Optional[list] = None
 
 
-class TestContent(BaseModel):
+class TestQuestions(BaseModel):
     questions: List[QuestionStructure]
 
 
@@ -45,7 +45,7 @@ class TestUpdate(BaseModel):
     type: Optional[str] = None
     user_id: Optional[int] = None
     title: Optional[str] = None
-    content: Optional[TestContent] = None
+    content: Optional[TestQuestions] = None
 
 
 class Answer(BaseModel):
@@ -61,7 +61,7 @@ class TestSubmitPayload(BaseModel):
 
 class TestGetResponse(BaseModel):
     test_id: int
-    test_structure: TestContent
+    test_structure: TestQuestions
     uploaded_date: datetime.datetime
 
 

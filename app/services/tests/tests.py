@@ -17,7 +17,7 @@ from app.database.models.orm.user import User
 from app.parsers.google_form import get_form_response_url
 from app.schemas.llm import LLMQuestionIn, LLMQuestionsListIn
 from app.schemas.tests.test import (
-    TestContent,
+    TestQuestions,
     QuestionStructure,
     QuestionType,
     Answer,
@@ -35,7 +35,7 @@ from app.utils.exception_types import ServerError
 logger = logging.getLogger(__name__)
 
 
-def normalize_parsed_data(parsed_data: list[dict]) -> TestContent:
+def normalize_parsed_data(parsed_data: list[dict]) -> TestQuestions:
     normalized_questions: list[QuestionStructure] = []
 
     logger.info(parsed_data)
@@ -57,12 +57,12 @@ def normalize_parsed_data(parsed_data: list[dict]) -> TestContent:
         else:
             logger.info(f"Skipping non-question field: {question['id']}")
 
-    test_content = TestContent(questions=normalized_questions)
+    test_content = TestQuestions(questions=normalized_questions)
     return test_content
 
 
 async def store_test_in_db(
-    test_content: TestContent,
+    test_content: TestQuestions,
     test_url: str,
     current_user: User,
     async_db_session: AsyncSession,
@@ -124,7 +124,9 @@ def fill_random_value(type_id, entry_id, options, required=False, entry_name="")
     return ""
 
 
-async def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
+async def answer_llm_questions(
+    llm_input_questions: list[QuestionStructure], test_id: int, db_session: AsyncSession
+):
     if llm_input_questions:
         llm_questions_list_in = LLMQuestionsListIn(
             questions=[
@@ -136,7 +138,9 @@ async def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
         )
 
         llm_client = LLMClient()
-        solver_agent = LLMTestSolverAgent(llm_client)
+        solver_agent = LLMTestSolverAgent(
+            llm_client, test_id=test_id, db_session=db_session
+        )
 
         state = LLMSolverState(questions=llm_questions_list_in)
 
@@ -152,7 +156,10 @@ async def answer_llm_questions(llm_input_questions: list[QuestionStructure]):
 
 
 async def answer_test_questions(
-    test_content: TestContent, payload_answers: list[Answer]
+    test_content: TestQuestions,
+    payload_answers: list[Answer],
+    test_id: int,
+    db_session: AsyncSession,
 ) -> AnsweredTestContent:
     """Fill form entries with fill_algorithm"""
     answers_map = {a.question_id: a for a in payload_answers}
@@ -195,7 +202,9 @@ async def answer_test_questions(
                 )
         answered_questions.append(answered_question)
 
-    llm_answers_map = await answer_llm_questions(llm_input_questions)
+    llm_answers_map = await answer_llm_questions(
+        llm_input_questions, test_id=test_id, db_session=db_session
+    )
 
     for aq in answered_questions:
         if aq.answer_mode == "llm" and aq.id in llm_answers_map:
@@ -271,10 +280,11 @@ async def submit_single_test(
             "Submitting test",
             extra={"test_id": test_db.id, "user_id": current_user.id},
         )
-
         answered_test_content = await answer_test_questions(
             test_content=test_db.content,
+            test_id=test_id,
             payload_answers=payload.answers,
+            db_session=session,
         )
 
         data = build_google_form_payload(answered_test_content.questions)

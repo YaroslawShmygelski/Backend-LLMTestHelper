@@ -60,7 +60,7 @@ def upgrade() -> None:
         sa.Column("document_id", sa.Integer(), nullable=False),
         sa.Column("chunk_index", sa.Integer(), nullable=False),
         sa.Column("chunk_text", sa.String(), nullable=False),
-        sa.Column("embedding", Vector(dim=1536), nullable=False),
+        sa.Column("embedding", Vector(dim=3072), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

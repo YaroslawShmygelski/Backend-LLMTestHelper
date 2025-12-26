@@ -2,7 +2,10 @@ import asyncio
 import logging
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from sqlalchemy import select
 
+from app.database.models.orm.document import Document
+from app.database.models.orm.document_embedding import DocumentEmbedding
 from app.services.llm.llm_config import embeddings_model
 from app.settings import CHUNK_SIZE, CHUNK_OVERLAP, EMBEDDING_DIM
 
@@ -24,14 +27,41 @@ async def get_document_chunks(text: str, storage: dict, job_id: str) -> list:
     return chunks
 
 
-async def generate_embeddings_for_chunks(chunks: list[str]) -> list[list[float]]:
+async def generate_embeddings(chunks: list[str]) -> list[list[float]]:
     loop = asyncio.get_event_loop()
     embeddings = await loop.run_in_executor(
-        None, lambda: embeddings_model.embed_documents(chunks, output_dimensionality=1536)
+        None,
+        lambda: embeddings_model.embed_documents(chunks, output_dimensionality=3072),
     )
     if chunks:
         dim = len(embeddings[0])
         if dim != EMBEDDING_DIM:
-            raise ValueError(f"Dimension mismatch expected: {EMBEDDING_DIM} received: {dim}")
-    logger.info("Generated embeddings for chunks", extra={"embeddings": len(embeddings)})
+            raise ValueError(
+                f"Dimension mismatch expected: {EMBEDDING_DIM} received: {dim}"
+            )
+    logger.info(
+        "Generated embeddings for chunks", extra={"embeddings": len(embeddings)}
+    )
     return embeddings
+
+
+async def retrieve_context_from_db(
+    db_session, question_text: str, test_id: int, top_k: int = 5
+):
+    query_embedding = embeddings_model.embed_query(question_text)
+
+    query = (
+        select(DocumentEmbedding)
+        .join(Document, Document.id == DocumentEmbedding.document_id)
+        .where(Document.test_id == test_id)
+        .order_by(DocumentEmbedding.embedding.l2_distance(query_embedding))
+        .limit(top_k)
+    )
+
+    results = await db_session.execute(query)
+    chunks = results.scalars().all()
+
+    if not chunks:
+        return None
+
+    return [c.chunk_text for c in chunks]

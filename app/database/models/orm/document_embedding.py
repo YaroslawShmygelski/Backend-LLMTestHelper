@@ -16,5 +16,5 @@ class DocumentEmbedding(DeclarativeBase, MixinModel):
     )
     chunk_index: Mapped[int] = mapped_column(nullable=False)
     chunk_text: Mapped[str] = mapped_column(nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(3072), nullable=False)
     document = relationship("Document", back_populates="embeddings")

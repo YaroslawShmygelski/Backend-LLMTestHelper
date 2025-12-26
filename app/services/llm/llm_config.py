@@ -20,7 +20,6 @@ class LLMGeminiSettings:
 
 class LLMClient:
     def __init__(self):
-
         self.model = ChatGoogleGenerativeAI(
             model=LLMGeminiSettings.model,
             temperature=LLMGeminiSettings.llm_temperature,
@@ -40,17 +39,21 @@ class LLMSolverState(BaseModel):
     validated_answers: Optional[LLMQuestionsListOut] = None
     attempts: int = 0
     error: Optional[str] = None
+    context_chunks: list[str] = []
 
     def increment_attempts(self):
         self.attempts += 1
 
 
-def build_test_solver_prompt(questions: LLMQuestionsListIn) -> str:
+def build_test_solver_prompt(
+    questions: LLMQuestionsListIn, context_chunks: list[str]
+) -> str:
     return f"""
             {LLM_SYSTEM_MESSAGE}
-            Questions:
+            - Questions:
             {questions.model_dump()}
-            Return ONLY a JSON array matching this Pydantic schema:
+            {f'{LLM_CONTEXT} : {context_chunks}' if context_chunks else ''}
+            - Return ONLY a JSON array matching this Pydantic schema:
             {LLMQuestionsListOut.model_json_schema()}
             {LLM_SOLVER_RESPONSE_RULES}
             """
@@ -62,10 +65,15 @@ You are given a list of questions in JSON format below:"""
 
 LLM_SOLVER_RESPONSE_RULES = """
   Rules:
+- First search in provided context
 - If options exist, choose one or many depending on type description
 - if there is option where you have to select multiple answers you should send "answer": ["option1", "option2"]]
 - If not, generate a concise answer
 - ALLWAYS Do NOT add any explanations, Markdowns, //, or Python code"""
+
+LLM_CONTEXT = """
+   - This is additional context provided by user, please review it carefully: 
+"""
 
 embeddings_model = GoogleGenerativeAIEmbeddings(
     model=LLMGeminiSettings.embeddings_model
