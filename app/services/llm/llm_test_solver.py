@@ -115,11 +115,6 @@ class LLMTestSolverAgent:
         )
 
         compiled_graph = self.workflow.compile()
-
-        png_bytes = compiled_graph.get_graph().draw_mermaid_png()
-
-        with open("llm_solver_graph.png", "wb") as f:
-            f.write(png_bytes)
         return compiled_graph
 
     async def call_llm_async(self, state: LLMSolverState) -> LLMSolverState:
