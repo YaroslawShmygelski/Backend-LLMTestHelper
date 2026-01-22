@@ -1,0 +1,64 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: db_llm_test_solver
+    restart: always
+
+    env_file: .env.compose
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_DB_USER:-app_user}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-secret_password}
+      POSTGRES_DB: ${POSTGRES_DB_NAME:-app_db}
+
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_USER:-app_user} -d ${POSTGRES_DB_NAME:-app_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+    networks:
+      - backend_network
+
+  migrator:
+    build: .
+    container_name: migrator_llm_test_solver
+
+    command: alembic upgrade head
+
+    env_file: .env.compose
+
+    depends_on:
+       db:
+         condition: service_healthy
+
+    networks:
+      - backend_network
+
+  backend:
+    build: .
+    container_name: backend_llm_test_solver
+    restart: always
+
+    env_file: .env.compose
+
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+
+    networks:
+      - backend_network
+
+volumes:
+  pg_data:
+
+networks:
+  backend_network:
+    driver: bridge
