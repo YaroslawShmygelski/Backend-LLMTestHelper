@@ -4,8 +4,6 @@ services:
     container_name: db_llm_test_solver
     restart: always
 
-    env_file: .env.compose
-
     environment:
       POSTGRES_USER: ${POSTGRES_DB_USER:-app_user}
       POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-secret_password}
@@ -21,7 +19,7 @@ services:
       retries: 3
 
     networks:
-      - backend_network
+      - app_network
 
   migrator:
     build: .
@@ -36,7 +34,7 @@ services:
          condition: service_healthy
 
     networks:
-      - backend_network
+      - app_network
 
   backend:
     build: .
@@ -54,11 +52,20 @@ services:
         condition: service_completed_successfully
 
     networks:
-      - backend_network
+      - app_network
+
+  frontend:
+    build:
+      context: ../Frontend-LLMTestHelper/llm-test-helper-front
+    container_name: frontend_llm_test_solver
+    depends_on:
+      - backend
+    networks:
+      - app_network
 
 volumes:
   pg_data:
 
 networks:
-  backend_network:
+  app_network:
     driver: bridge
