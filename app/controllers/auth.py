@@ -33,10 +33,10 @@ async def login_for_access_token(
     )
     user = result.scalar_one_or_none()
 
-    logger.info("User is found", extra={"user_id": user.id})
-
     if user is None:
         raise NotFoundError("User Not Found")
+
+    logger.info("User is found", extra={"user_id": user.id})
 
     if not user.is_active:
         raise ForbiddenError("User is not active")
