@@ -29,6 +29,7 @@ from app.services.tests.tests import (
     get_runs_of_test_db,
 )
 from app.services.tests.documents import check_request_document, process_document_job
+from app.services.users import get_user_tests_db
 from app.settings import TEST_RUNS_JOBS_STORAGE, UPLOAD_DOCUMENT_JOBS_STORAGE
 from app.utils.enums import JobStatus
 from app.utils.exception_types import NotFoundError
@@ -54,6 +55,7 @@ async def upload_google_doc_test(
     test_db = await store_test_in_db(
         test_content=test_content,
         test_url=payload.test_url,
+        title=payload.title,
         current_user=current_user,
         async_db_session=async_db_session,
     )

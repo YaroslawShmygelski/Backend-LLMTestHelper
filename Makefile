@@ -7,13 +7,13 @@ COMPOSE_LOCAL = docker compose --env-file $(ENV) -f $(BASE) -f $(LOCAL)
 COMPOSE_PROD = docker compose --env-file $(ENV) -f $(BASE) -f $(PROD)
 
 # Development
-local-up:
-	$(COMPOSE_LOCAL) up --build -d
+up:
+	$(COMPOSE_LOCAL) up
 
-local-down:
+down:
 	$(COMPOSE_LOCAL) down
 
-local-clean-up:
+clean-up:
 	$(COMPOSE_LOCAL) down -v && make local-up
 
 local-logs:

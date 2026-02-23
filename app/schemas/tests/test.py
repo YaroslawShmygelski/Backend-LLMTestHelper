@@ -39,6 +39,7 @@ class TestResponse(BaseModel):
 
 class GoogleDocsRequest(BaseModel):
     test_url: str
+    title: str
 
 
 class TestUpdate(BaseModel):
@@ -103,3 +104,19 @@ class RunsOfTest(BaseModel):
 
 class RunsOfTestResponse(BaseModel):
     test_runs: list[RunsOfTest]
+
+
+class UserTestItem(BaseModel):
+    test_id: int
+    type: str
+    title: str
+    url: Optional[str] = None
+    is_submitted: bool
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+
+class UserTestsListResponse(BaseModel):
+    offset: int
+    limit: int
+    tests: List[UserTestItem]

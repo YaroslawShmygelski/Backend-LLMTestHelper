@@ -64,6 +64,7 @@ def normalize_parsed_data(parsed_data: list[dict]) -> TestQuestions:
 async def store_test_in_db(
     test_content: TestQuestions,
     test_url: str,
+    title: str,
     current_user: User,
     async_db_session: AsyncSession,
 ):
@@ -71,7 +72,7 @@ async def store_test_in_db(
         type="google_document",
         user_id=current_user.id,
         url=test_url,
-        title="BoilerPlate",
+        title=title,
         content=test_content,
     )
     async_db_session.add(test_db)
