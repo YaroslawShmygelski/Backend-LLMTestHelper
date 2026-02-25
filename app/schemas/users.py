@@ -40,6 +40,7 @@ class UserTests(BaseModel):
     test_id: int
     type: str
     title: str
+    is_submitted: bool
     url: str
     created_at: datetime
     updated_at: datetime

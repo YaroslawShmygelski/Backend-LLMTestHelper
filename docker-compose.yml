@@ -4,6 +4,8 @@ services:
     container_name: db_llm_test_solver
     restart: always
 
+    env_file: .env.compose
+
     environment:
       POSTGRES_USER: ${POSTGRES_DB_USER:-app_user}
       POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-secret_password}

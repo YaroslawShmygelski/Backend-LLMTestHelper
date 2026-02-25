@@ -97,6 +97,7 @@ async def get_user_tests(
         UserTests(
             test_id=test.id,
             type=test.type,
+            is_submitted=test.is_submitted,
             title=test.title,
             url=test.url,
             created_at=test.created_at,

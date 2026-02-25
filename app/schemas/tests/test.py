@@ -62,6 +62,8 @@ class TestSubmitPayload(BaseModel):
 
 class TestGetResponse(BaseModel):
     test_id: int
+    title: str
+    is_submitted: bool
     test_structure: TestQuestions
     uploaded_date: datetime.datetime
 

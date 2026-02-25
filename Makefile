@@ -14,7 +14,7 @@ down:
 	$(COMPOSE_LOCAL) down
 
 clean-up:
-	$(COMPOSE_LOCAL) down -v && make local-up
+	$(COMPOSE_LOCAL) down -v && make up
 
 local-logs:
 	$(COMPOSE_LOCAL) logs -f

@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.models.orm.test_run import TestRun
 from app.database.models.orm.user import User
 from app.parsers.google_form import parse_google_form
-from app.schemas.tests.document import UploadDocumentRequest
 from app.schemas.tests.test import (
     TestResponse,
     GoogleDocsRequest,
@@ -28,8 +27,7 @@ from app.services.tests.tests import (
     run_background_tests,
     get_runs_of_test_db,
 )
-from app.services.tests.documents import check_request_document, process_document_job
-from app.services.users import get_user_tests_db
+from app.services.tests.documents import process_document_job
 from app.settings import TEST_RUNS_JOBS_STORAGE, UPLOAD_DOCUMENT_JOBS_STORAGE
 from app.utils.enums import JobStatus
 from app.utils.exception_types import NotFoundError
@@ -88,6 +86,8 @@ async def get_test(
     )
     return TestGetResponse(
         test_id=test_db.id,
+        title=test_db.title,
+        is_submitted=test_db.is_submitted,
         test_structure=test_db.content,
         uploaded_date=test_db.created_at,
     )
