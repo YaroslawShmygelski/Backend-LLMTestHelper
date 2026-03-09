@@ -7,6 +7,8 @@ COMPOSE_LOCAL = docker compose --env-file $(ENV) -f $(BASE) -f $(LOCAL)
 COMPOSE_PROD = docker compose --env-file $(ENV) -f $(BASE) -f $(PROD)
 
 # Development
+test:
+	uv run pytest app/tests/ -v
 up:
 	$(COMPOSE_LOCAL) up
 
