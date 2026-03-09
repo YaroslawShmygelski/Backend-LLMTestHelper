@@ -61,13 +61,14 @@ def normalize_parsed_data(parsed_data: list[dict]) -> TestQuestions:
     return test_content
 
 
-async def store_test_in_db(
+async def save_test_in_db(
     test_content: TestQuestions,
     test_url: str,
     title: str,
     current_user: User,
     async_db_session: AsyncSession,
 ):
+    # Tworzenie obiektu ORM
     test_db = Test(
         type="google_document",
         user_id=current_user.id,
@@ -75,6 +76,8 @@ async def store_test_in_db(
         title=title,
         content=test_content,
     )
+
+    # Asynchroniczny zapis do DB
     async_db_session.add(test_db)
     await async_db_session.commit()
     return test_db

@@ -32,7 +32,7 @@ README.md
 
 .pylintrc
 .python-version
-tests/
+app/tests/
 conftest.py
 
 Dockerfile

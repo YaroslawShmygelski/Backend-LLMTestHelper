@@ -27,7 +27,7 @@ async def add_test_google_docs(
     payload: GoogleDocsRequest,
     current_user: User = Depends(get_user_from_token),
     async_db_session: AsyncSession = Depends(get_async_postgres_session),
-):
+) -> TestResponse:
     result = await test_controllers.upload_google_doc_test(
         payload, current_user, async_db_session
     )

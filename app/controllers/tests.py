@@ -22,7 +22,7 @@ from app.schemas.tests.test import (
 )
 from app.services.tests.tests import (
     normalize_parsed_data,
-    store_test_in_db,
+    save_test_in_db,
     get_test_from_db,
     run_background_tests,
     get_runs_of_test_db,
@@ -39,34 +39,24 @@ logger = logging.getLogger(__name__)
 async def upload_google_doc_test(
     payload: GoogleDocsRequest, current_user: User, async_db_session: AsyncSession
 ) -> TestResponse:
+    # 1. Logowanie — kto i co robi
     logger.info(
         "google_doc_import",
-        extra={
-            "user_id": current_user.id,
-            "test_url": payload.test_url,
-        },
+        extra={"user_id": current_user.id, "test_url": payload.test_url},
     )
+    # 2. Wywołanie parsera — pobranie pytań z Google Form
     parsed_data = parse_google_form(url=payload.test_url, only_required=False)
-    logger.info("Test is parsed:", extra={"parsed_data": parsed_data})
+    # 3. Wywołanie serwisu — normalizacja danych
     test_content: TestQuestions = normalize_parsed_data(parsed_data)
-
-    test_db = await store_test_in_db(
+    # 4. Wywołanie serwisu — zapis do bazy danych
+    test_db = await save_test_in_db(
         test_content=test_content,
         test_url=payload.test_url,
         title=payload.title,
         current_user=current_user,
         async_db_session=async_db_session,
     )
-
-    logger.info(
-        "Test saved to DB",
-        extra={
-            "test_id": test_db.id,
-            "user_id": current_user.id,
-            "test_url": payload.test_url,
-        },
-    )
-
+    # 5. Formatowanie odpowiedzi
     return TestResponse(test_id=test_db.id)
 
 
