@@ -31,7 +31,7 @@ async def generate_embeddings(chunks: list[str]) -> list[list[float]]:
     loop = asyncio.get_event_loop()
     embeddings = await loop.run_in_executor(
         None,
-        lambda: embeddings_model.embed_documents(chunks, output_dimensionality=3072)
+        lambda: embeddings_model.embed_documents(chunks, output_dimensionality=3072),
     )
     if chunks:
         dim = len(embeddings[0])

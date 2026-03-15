@@ -8,7 +8,11 @@ COMPOSE_PROD = docker compose --env-file $(ENV) -f $(BASE) -f $(PROD)
 
 # Development
 test:
-	uv run pytest app/tests/ -v
+	uv run pytest tests/ -v
+unit-test:
+	uv run pytest tests/unit/ -v
+integration-test:
+	uv run pytest tests/integration/ -v
 up:
 	$(COMPOSE_LOCAL) up
 
